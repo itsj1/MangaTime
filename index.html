@@ -8,8 +8,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>MangaTime</title>
 <style>
-:root{--bg:#f5f5f2;--card:#fff;--ink:#0b0b0a;--mut:#6f6f6b;--acc:#ffd400;--act:#8a6d00;--tint:#fff1a8;--on:#1a1500;--red:#e5484d;--ok:#16a34a;--line:#e6e6e2;color-scheme:light}
-@media(prefers-color-scheme:dark){:root{--bg:#111213;--card:#1c1d1f;--ink:#f4f4f0;--mut:#9a9ca0;--acc:#ffd400;--act:#ffd400;--tint:#3b3410;--on:#1a1500;--red:#f06a6a;--ok:#34d27b;--line:#2f3134;color-scheme:dark}}
+:root{--bg:#f5f5f2;--card:#fff;--ink:#0b0b0a;--mut:#6f6f6b;--acc:#ffd400;--act:#8a6d00;--tint:#fff1a8;--on:#1a1500;--red:#e5484d;--ok:#16a34a;--fin:#8b6cf0;--line:#e6e6e2;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#111213;--card:#1c1d1f;--ink:#f4f4f0;--mut:#9a9ca0;--acc:#ffd400;--act:#ffd400;--tint:#3b3410;--on:#1a1500;--red:#f06a6a;--ok:#34d27b;--fin:#b9a2ff;--line:#2f3134;color-scheme:dark}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{overscroll-behavior-y:none}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 "Avenir Next","Trebuchet MS",system-ui,sans-serif;padding:env(safe-area-inset-top) 12px calc(100px + env(safe-area-inset-bottom))}
@@ -58,6 +58,7 @@ input:focus{border-color:var(--acc)}
 .pb{height:5px;border-radius:9px;background:var(--line);margin-top:7px;overflow:hidden}
 .pb i{display:block;height:100%;background:var(--acc);border-radius:9px}
 .pb.dn i{background:var(--ok)}
+.pb.fn i{background:var(--fin)}
 /* My List : rangées qui défilent sur le côté, environ 4 posters par écran */
 .hs{display:flex;gap:10px;overflow-x:auto;margin:0 -12px;padding:0 12px 6px;scroll-padding:0 12px;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .hs::-webkit-scrollbar{display:none}
@@ -95,6 +96,30 @@ header.sh{justify-content:flex-start;gap:12px}
 .dd b{display:block;color:var(--act);font-size:14px}
 .dd small{color:var(--mut)}
 
+/* Page catégorie du profil */
+.ib.on{background:var(--acc);border-color:var(--acc);color:var(--on)}
+.fch{display:flex;flex-wrap:wrap;gap:8px}
+.grid.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid.g4{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 8px}
+.grid.g4 .pc b{font-size:11px}
+.grid.g4 .pc small{font-size:10px}
+.grid.g5{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px 6px}
+.grid.g5 .pc b,.grid.g5 .pc small,.grid.g5 .tg,.grid.g4 .tg{display:none}
+.grid.g5 .im,.grid.g4 .im{border-radius:8px}
+.cr{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 0;border-bottom:1px solid var(--line)}
+.cr .th{flex:none;width:46px;aspect-ratio:2/3;border-radius:6px;overflow:hidden;background:var(--card);border:1px solid var(--line)}
+.cr.dt{align-items:flex-start;padding:14px 0}
+.cr.dt .th{width:92px;border-radius:8px}
+.cr .th img{width:100%;height:100%;object-fit:cover;display:block}
+.cr .tx{flex:1;min-width:0}
+.cr .tx b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px;font-weight:700}
+.cr.dt .tx b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:17px;line-height:1.2}
+.cr .tx small{display:block;font-size:13px;color:var(--mut);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr .tx small.gn{color:var(--act)}
+.cr .pb{display:block;margin-top:8px}
+.mi.cur{border-color:var(--acc)}
+.mi.cur>svg{margin-left:auto;color:var(--act);flex:none}
+.mi.cp{padding:9px 14px;margin:8px 0}
 /* Home « Suivant » : liste ou grille */
 .hbt{display:flex;align-items:center;gap:6px}
 .h2r>small{font-weight:500;font-size:13px;color:var(--mut);margin:0}
@@ -245,7 +270,7 @@ const BR={},DET={},OPEN={};          // œuvres vues en recherche, détails char
 const obj=k=>S.items[k]||BR[k];
 
 /* Icônes */
-const IC={search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',home:'<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>',list:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',back:'<path d="m15 5-7 7 7 7"/>',chev:'<path d="m9 5 7 7-7 7"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',sync:'<path d="M20 11a8 8 0 0 0-14.3-4.4L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.4l1.7-1.9"/><path d="M20 20v-4.5h-4.5"/>',down:'<path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>',upl:'<path d="M12 16V5"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',dots:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',plus:'<path d="M12 5v14M5 12h14"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',undo:'<path d="M4 8h10a6 6 0 0 1 0 12H8"/><path d="m8 4-4 4 4 4"/>',ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',mark:'<path d="M6 4h12v17l-6-4.5L6 21z"/>',tiles:'<rect x="4" y="4" width="4" height="6" rx="1"/><rect x="10" y="4" width="4" height="6" rx="1"/><rect x="16" y="4" width="4" height="6" rx="1"/><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="14" width="4" height="6" rx="1"/><rect x="16" y="14" width="4" height="6" rx="1"/>',rows:'<rect x="4" y="4" width="16" height="6" rx="1.5"/><rect x="4" y="14" width="16" height="6" rx="1.5"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>'};
+const IC={search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',home:'<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>',list:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',back:'<path d="m15 5-7 7 7 7"/>',chev:'<path d="m9 5 7 7-7 7"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',sync:'<path d="M20 11a8 8 0 0 0-14.3-4.4L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.4l1.7-1.9"/><path d="M20 20v-4.5h-4.5"/>',down:'<path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>',upl:'<path d="M12 16V5"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',dots:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',plus:'<path d="M12 5v14M5 12h14"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',undo:'<path d="M4 8h10a6 6 0 0 1 0 12H8"/><path d="m8 4-4 4 4 4"/>',ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',mark:'<path d="M6 4h12v17l-6-4.5L6 21z"/>',tiles:'<rect x="4" y="4" width="4" height="6" rx="1"/><rect x="10" y="4" width="4" height="6" rx="1"/><rect x="16" y="4" width="4" height="6" rx="1"/><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="14" width="4" height="6" rx="1"/><rect x="16" y="14" width="4" height="6" rx="1"/>',rows:'<rect x="4" y="4" width="16" height="6" rx="1.5"/><rect x="4" y="14" width="16" height="6" rx="1.5"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',filt:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>'};
 const SI=(n,z=22,w=2)=>`<svg width=${z} height=${z} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
 
 /* ============ Sources de données ============ */
@@ -266,7 +291,8 @@ async function tm(path,params){const key=(S.cfg.tmdb||'').trim();if(!key)throw n
  const r=await fetch(u,{headers:h});if(r.status===401)throw new Error('Clé TMDB refusée : vérifie-la dans les réglages.');if(!r.ok)throw new Error('TMDB '+r.status);return r.json()}
 /* Animé = animation d'origine japonaise ; TMDB regroupe toutes les saisons dans une seule fiche */
 const isAni=r=>(r.genre_ids||(r.genres||[]).map(g=>g.id)).includes(16)&&r.original_language==='ja';
-const fromTM=r=>({k:'tm:'+r.id,src:'tm',id:r.id,ty:isAni(r)?'A':'T',t:r.name||r.original_name||'Sans titre',p:r.poster_path?IMG+'w342'+r.poster_path:'',lb:isAni(r)?'Animé':'Série',tot:0,st:'',yr:+(r.first_air_date||'').slice(0,4)||0,nx:null});
+const TG={10759:'Action & Aventure',35:'Comédie',80:'Crime',99:'Documentaire',18:'Drame',10751:'Familial',10762:'Jeunesse',9648:'Mystère',10764:'Téléréalité',10765:'Science-fiction & Fantastique',10766:'Feuilleton',10768:'Guerre & Politique',37:'Western'};
+const fromTM=r=>({g:(r.genre_ids||[]).map(i=>TG[i]).filter(Boolean).slice(0,3),k:'tm:'+r.id,src:'tm',id:r.id,ty:isAni(r)?'A':'T',t:r.name||r.original_name||'Sans titre',p:r.poster_path?IMG+'w342'+r.poster_path:'',lb:isAni(r)?'Animé':'Série',tot:0,st:'',yr:+(r.first_air_date||'').slice(0,4)||0,nx:null});
 const dloc=d=>{const[y,m,j]=d.split('-').map(Number);return new Date(y,m-1,j).getTime()};
 function applyTM(it,d){
  it.t=d.name||it.t;if(d.genres&&d.original_language){const an=isAni(d);it.ty=an?'A':'T';it.lb=an?'Animé':'Série';it.g=d.genres.filter(g=>g.id!==16||!an).slice(0,3).map(g=>g.name)}if(d.poster_path)it.p=IMG+'w342'+d.poster_path;
@@ -309,6 +335,8 @@ async function relAL(it){
 async function estRel(it){const R=await Promise.allSettled([relMD(it),relAL(it)]),n=Math.max(...R.map(x=>x.status==='fulfilled'?x.value||0:0));
  if(n)it.rel=n;it.rf=Date.now()}
 const unit=it=>it.ty==='M'?'chapitre':'épisode';
+/* Couleur de la barre : violet = œuvre terminée et tout validé ; vert = à jour sur une œuvre encore en cours */
+const barCls=(it,P)=>it.s==='done'||(P.pct>=100&&!P.open&&(it.st==='fin'||it.st==='stop'))?' fn':P.pct>=100&&!P.open?' dn':'';
 const epLab=(it,x)=>it.src==='tm'?'S'+x.s+' · E'+x.e:(it.ty==='M'?'Chapitre ':'Épisode ')+x.e;
 function prog(it){const L=eps(it),w=seenSet(it);let seen=0,left=0,next=null;
  for(const x of L){if(w.has(x.id))seen++;else if(x.ok){left++;if(!next)next=x}}
@@ -347,7 +375,8 @@ const UST=[['cur','En cours'],['plan','À voir plus tard'],['done','Terminé'],[
 
 /* Rafraîchit les dates des œuvres suivies (au lancement, toutes les 6 h au plus) */
 async function refreshAll(force){
- const L=Object.values(S.items).filter(it=>['cur','plan','pause'].includes(it.s)&&(force||Date.now()-(it.nf||0)>6*3600e3));if(!L.length)return;
+ const need=it=>['cur','plan','pause'].includes(it.s)&&(force||Date.now()-(it.nf||0)>6*3600e3);
+ const L=Object.values(S.items).filter(need).concat(Object.values(S.items).filter(it=>!need(it)&&!it.g).slice(0,12));if(!L.length)return;   // + rattrapage des genres manquants
  const A=L.filter(x=>x.src==='al');
  try{for(let i=0;i<A.length;i+=50){const d=await al(`query($ids:[Int]){Page(perPage:50){media(id_in:$ids){${ALF}}}}`,{ids:A.slice(i,i+50).map(x=>x.id)});
   d.Page.media.forEach(m=>{const it=S.items['al:'+m.id];if(it){meta(it,fromAL(m));it.nf=Date.now()}})}
@@ -412,17 +441,17 @@ function initOpen(k){if(OPEN[k])return;const it=obj(k),P=prog(it),G=groups(it,P.
  if(it.src==='tm'){OPEN[k]=new Set();return}                       // saisons repliées par défaut, on ouvre celle qu'on veut
  const g=G.find(g=>P.next&&g.L.includes(P.next))||(P.seen?G[G.length-1]:G[0]);OPEN[k]=new Set([g.id])}
 function openDet(k){SCRS.push(scrollY);VIEW=k;if((obj(k)||{}).src==='tm')delete OPEN[k];initOpen(k);history.pushState({v:k,sub:SUBV},'');render();scrollTo(0,0);loadDet(k)}
-function openSub(t){SCRS.push(scrollY);SUBV=t;history.pushState({sub:t},'');render();scrollTo(0,0)}
+function openSub(t){SCRS.push(scrollY);SUBV=t;PF=PF0();history.pushState({sub:t},'');render();scrollTo(0,0)}
 addEventListener('popstate',e=>{const st=e.state||{};F=null;VIEW=st.v||null;SUBV=st.sub||null;render();scrollTo(0,SCRS.pop()||0)});
 
 /* ============ Vues ============ */
 const img=(it,cls)=>it.p?`<img src="${esc(it.p)}" alt="" loading=lazy>`:`<span class=ph>${esc(it.t)}</span>`;
 function card(it,mode){const inl=!!S.items[it.k];let ex='';
- if(mode==='list'){const P=prog(it);ex=`<div class="pb${P.pct>=100&&!P.open||it.s==='done'?' dn':''}"><i style="width:${it.s==='done'?100:P.pct}%"></i></div><b>${esc(it.t)}</b><small>${P.open?(it.w.length?'Ch. '+maxSeen(it):'Pas commencé'):P.seen+' / '+P.total}</small>`}
+ if(mode==='list'){const P=prog(it);ex=`<div class="pb${barCls(it,P)}"><i style="width:${it.s==='done'?100:P.pct}%"></i></div><b>${esc(it.t)}</b><small>${P.open?(it.w.length?'Ch. '+maxSeen(it):'Pas commencé'):P.seen+' / '+P.total}</small>`}
  else ex=`<b>${esc(it.t)}</b><small>${it.yr||''}</small>`;
  return`<button class="pc${mode==='list'?' lm':''}" data-a=open data-k="${it.k}"><div class=im>${img(it)}<span class=tg>${esc(it.lb)}</span>${mode!=='list'&&inl?`<span class=in>${SI('check',14,3)}</span>`:''}</div>${ex}</button>`}
 const chips=(L,cur,a)=>`<div class=chips>${L.map(([v,l])=>`<button class="chip${cur===v?' on':''}" data-a=${a} data-v=${v}>${l}</button>`).join('')}</div>`;
-const tabbar=()=>`<nav class=tabs>${[['disc','search','Discover'],['home','home','Home'],['cal','cal','Calendrier'],['list','user','Mon profil']].map(([k,i,l])=>`<button class="${TAB===k?'on':''}" data-a=tab data-t=${k}><span>${SI(i,24)}</span>${l}</button>`).join('')}</nav>`;
+const tabbar=()=>`<nav class=tabs>${[['disc','search','Discover'],['home','home','Home'],['cal','cal','Calendrier'],['list','user','Profil']].map(([k,i,l])=>`<button class="${TAB===k?'on':''}" data-a=tab data-t=${k}><span>${SI(i,24)}</span>${l}</button>`).join('')}</nav>`;
 const gear=`<button class=ib data-a=cfg aria-label="Réglages">${SI('gear',21,1.7)}</button>`;
 
 function resHTML(){
@@ -470,23 +499,44 @@ function calView(){const up=Object.values(S.items).filter(it=>it.s==='cur'||it.s
   out+=`<button class=rw data-a=open data-k="${it.k}" style="width:100%"><span class=th>${img(it)}</span><span class=tx><b>${esc(it.t)}</b><span>${o.lab} · ${esc(it.lb)}</span></span>${o.d?'':`<span class=dd><b>${D.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</b></span>`}</button>`}
  return`<header><h1>Calendrier</h1>${gear}</header>${out||`<div class=empty><b>Aucune sortie annoncée</b>Les prochains épisodes de tes séries et animés en cours apparaîtront ici, jour par jour.</div>`}`}
 
-/* Rangées de My List : « À voir plus tard » (tous types), puis une rangée par type */
-const SECS=[['T','Mes séries'],['A','Mes animés'],['M','Mes mangas']],SECL={plan:'À voir plus tard'};SECS.forEach(x=>SECL[x[0]]=x[1]);
-function secItems(t){const all=Object.values(S.items).sort((a,b)=>(b.u||b.a||0)-(a.u||a.a||0));
- if(t==='plan')return all.filter(x=>x.s==='plan');
- return all.filter(x=>x.ty===t&&(FS==='all'?x.s!=='plan':x.s===FS))}
+/* Profil : une rangée par type ; « Tout voir » ouvre la page de la catégorie (recherche, filtres, affichage) */
+const SECS=[['T','Mes séries'],['A','Mes animés'],['M','Mes mangas']],CATL={T:'Séries',A:'Animés',M:'Mangas',plan:'À voir plus tard'};
+const secItems=t=>Object.values(S.items).filter(x=>t==='plan'?x.s==='plan':x.ty===t).sort((a,b)=>lastW(b)-lastW(a));
 const listRow=([t,l])=>{const X=secItems(t);return X.length?`<h2 class=h2r><span>${l}<small>${X.length}</small></span>${X.length>1?`<button data-a=all data-v=${t}>Tout voir</button>`:''}</h2><div class="hs${t==='plan'?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`:''};
-function subView(){if(SUBV.startsWith('next:')){const t=SUBV.slice(5),X=homeSets().next.filter(x=>x.it.ty===t);return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${(HSEC.find(x=>x[0]===t)||[])[1]||''}<small>${X.length}</small></h1><span class=hbt style="margin-left:auto">${hvBtn()}</span></header>${nextHTML(X)}`}
- const X=secItems(SUBV),l=SECL[SUBV]||'';
- return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${l}<small>${X.length}</small></h1></header>
- ${X.length?`<div class="grid${SUBV==='plan'?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`:`<div class=empty><b>Rien ici</b>Cette rangée est vide.</div>`}`}
 function listView(){const all=Object.values(S.items);
  const epi=all.filter(x=>x.ty!=='M').reduce((a,x)=>a+x.w.length,0),ch=all.filter(x=>x.ty==='M').reduce((a,x)=>a+x.w.length,0);
- const sec=SECS.map(listRow).join('');
- return`<header><h1>Mon profil</h1>${gear}</header>
+ return`<header><h1>Profil</h1>${gear}</header>
  <div class=stats><div><b>${all.length}</b><span>œuvres</span></div><div><b>${epi}</b><span>épisodes vus</span></div><div><b>${ch}</b><span>chapitres lus</span></div></div>
- ${chips([['all','Tous les statuts'],...UST],FS,'fs')}
- ${sec||`<div class=empty><b>Rien ici</b>${all.length?'Aucune œuvre ne correspond à ce statut.':'Ajoute des œuvres depuis Discover.'}</div>`}`}
+ ${SECS.map(listRow).join('')||`<div class=empty><b>Rien ici</b>Ajoute des œuvres depuis Discover.</div>`}`}
+
+/* ---------- Page d'une catégorie ---------- */
+const PF0=()=>({q:'',sort:'seen',genre:null,st:null,us:null});let PF=PF0();
+const PSORT=[['seen','Dernière vue'],['add','Date d’ajout'],['title','Titre (A → Z)'],['prog','Avancement'],['year','Année de sortie']];
+const PST=[['rel','En cours'],['soon','En production'],['fin','Terminé'],['stop','Annulé']];
+const PMODE=[['g2','Grille ×2'],['g3','Grille ×3'],['g4','Grille ×4'],['g5','Grille ×5'],['list','Liste'],['det','Détaillée']];
+const norm=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+const ustL=s=>(UST.find(x=>x[0]===s)||[])[1]||'';
+function catItems(){let X=secItems(SUBV);
+ if(PF.genre)X=X.filter(x=>(x.g||[]).includes(PF.genre));
+ if(PF.st)X=X.filter(x=>(x.st==='hia'?'rel':x.st)===PF.st);
+ if(PF.us)X=X.filter(x=>x.s===PF.us);
+ const W=norm(PF.q).split(/\s+/).filter(Boolean);
+ if(W.length)X=X.filter(x=>{const h=norm([x.t,x.lb,x.yr,(x.g||[]).join(' '),STL[x.st],ustL(x.s)].join(' '));return W.every(w=>h.includes(w))});
+ const pc=x=>prog(x).pct;
+ return X.sort(PF.sort==='add'?(a,b)=>(b.a||0)-(a.a||0):PF.sort==='title'?(a,b)=>a.t.localeCompare(b.t,'fr'):PF.sort==='prog'?(a,b)=>pc(b)-pc(a):PF.sort==='year'?(a,b)=>(b.yr||0)-(a.yr||0):(a,b)=>lastW(b)-lastW(a))}
+const nFilt=()=>(PF.genre?1:0)+(PF.st?1:0)+(PF.us?1:0)+(PF.sort!=='seen'?1:0);
+function catHTML(){const X=catItems(),all=secItems(SUBV).length,m=S.pm||'g3',mix=SUBV==='plan';
+ if(!X.length)return`<div class=empty><b>Aucun résultat</b>${all?'Aucune œuvre ne correspond à ta recherche ou à tes filtres.':'Cette catégorie est vide.'}</div>`;
+ const head=X.length<all?`<p class=mut style="margin:10px 2px 0">${pl(X.length,'résultat')} sur ${all}</p>`:'';
+ if(m==='list'||m==='det')return head+X.map(it=>{const P=prog(it),o=nextOut(it),u=unit(it),cnt=P.open?(P.seen?'Ch. '+maxSeen(it):'Pas commencé'):P.seen+' / '+P.total+' '+u+'s';
+  return m==='list'?`<button class="cr" data-a=open data-k="${it.k}"><span class=th>${img(it)}</span><span class=tx><b>${esc(it.t)}</b><small>${[mix?it.lb:'',cnt,ustL(it.s)].filter(Boolean).join(' · ')}</small><span class="pb${barCls(it,P)}"><i style="width:${it.s==='done'?100:P.pct}%"></i></span></span></button>`
+  :`<button class="cr dt" data-a=open data-k="${it.k}"><span class=th>${img(it)}</span><span class=tx><b>${esc(it.t)}</b><small>${[it.lb,it.yr||'',STL[it.st]||''].filter(Boolean).join(' · ')}</small>${it.g&&it.g.length?`<small class=gn>${it.g.map(esc).join(' · ')}</small>`:''}<small>${cnt}${P.open?'':' · '+P.pct+' %'} · ${ustL(it.s)}</small>${o?`<small class=gn>${o.lab} · ${when(o).a.toLowerCase()}</small>`:''}<span class="pb${barCls(it,P)}"><i style="width:${it.s==='done'?100:P.pct}%"></i></span></span></button>`}).join('');
+ return head+`<div class="grid ${m}${mix?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`}
+function paintCat(){const el=$('#cres');if(el)el.innerHTML=catHTML();const b=$('#fbt');if(b)b.classList.toggle('on',nFilt()>0)}
+function subView(){if(SUBV.startsWith('next:')){const t=SUBV.slice(5),X=homeSets().next.filter(x=>x.it.ty===t);return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${(HSEC.find(x=>x[0]===t)||[])[1]||''}<small>${X.length}</small></h1><span class=hbt style="margin-left:auto">${hvBtn()}</span></header>${nextHTML(X)}`}
+ return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${CATL[SUBV]||''}<small>${secItems(SUBV).length}</small></h1><span class=hbt style="margin-left:auto"><button class="ib${nFilt()?' on':''}" id=fbt data-a=pfo aria-label="Filtres et tri">${SI('filt',20)}</button><button class=ib data-a=pmo aria-label="Mode d’affichage">${SI('dots',20,2.6)}</button></span></header>
+ <div class=srch>${SI('search',20)}<input id=cq type=search placeholder="Titre, genre, année, statut…" value="${esc(PF.q)}" autocomplete=off enterkeyhint=search><button class=clr id=cclr data-a=cclr aria-label="Effacer la recherche" ${PF.q?'':'hidden'}>${SI('x',16,2.4)}</button></div>
+ <div id=cres>${catHTML()}</div>`}
 
 function detView(){const it=obj(VIEW);if(!it)return'';const inl=!!S.items[it.k],D=DET[it.k],P=prog(it),G=groups(it,P.L),O=OPEN[it.k]||new Set(),o=nextOut(it),u=unit(it);
  const row=x=>{const on=P.w.has(x.id),se=D&&it.src==='tm'&&D.se[x.s]&&D.se[x.s][x.e],at=se&&se.d?dloc(se.d):D&&D.sc[x.e];
@@ -501,7 +551,7 @@ function detView(){const it=obj(VIEW);if(!it)return'';const inl=!!S.items[it.k],
  <div class=hero style="${D&&D.ban?`background-image:url('${esc(D.ban)}')`:''}"></div>
  <div class=hd><div class=po>${img(it)}</div><div><h1>${esc(it.t)}</h1><div class=mut>${[it.lb,it.yr||'',STL[it.st]||''].filter(Boolean).join(' · ')}</div>${it.g&&it.g.length?`<div class=gen>${it.g.map(esc).join(' · ')}</div>`:''}</div></div>
  ${inl?chips(UST,it.s,'us'):`<button class=big data-a=add>+ Ajouter à ma liste</button>`}
- ${inl||P.seen?`<div class=prg><div class="pb${P.pct>=100&&!P.open?' dn':''}"><i style="width:${P.pct}%"></i></div><div><span>${P.open?(P.seen?'Lu jusqu’au chapitre '+maxSeen(it)+' · nombre de chapitres sortis inconnu':'Pas commencé'):P.seen+' / '+P.total+' '+u+'s'}</span><span>${P.open?'':P.pct+' %'}</span></div></div>`:''}
+ ${inl||P.seen?`<div class=prg><div class="pb${barCls(it,P)}"><i style="width:${P.pct}%"></i></div><div><span>${P.open?(P.seen?'Lu jusqu’au chapitre '+maxSeen(it)+' · nombre de chapitres sortis inconnu':'Pas commencé'):P.seen+' / '+P.total+' '+u+'s'}</span><span>${P.open?'':P.pct+' %'}</span></div></div>`:''}
  ${o?(w=>`<div class=nxt>${SI('cal',22)}<div><b>${o.lab} · ${w.a}${w.b?' ('+w.b+')':''}</b>${o.est?'Estimation d’après le jour de sortie choisi':'Prochaine sortie'}</div></div>`)(when(o)):''}
  ${D&&D.desc?`<p class=desc data-a=desc>${esc(D.desc)}</p>`:''}
  ${it.ty==='M'?`<div class=box><label>J’en suis au chapitre…</label><div class=inl><input id=upto type=number inputmode=numeric min=0 placeholder="ex. 132" value="${maxSeen(it)||''}"><button data-a=upto>OK</button></div><p class=rel>${it.tot?it.tot+' chapitres au total.':it.rel||it.relm?'Environ '+released(it)+' chapitres sortis'+(!it.rel&&it.relm?' (valeur que tu as saisie).':'.'):'Nombre de chapitres sortis inconnu pour l’instant.'}</p>${it.tot||it.rel?'':`<label>Introuvable automatiquement : tu peux l’indiquer ici</label><div class=inl><input id=relm type=number inputmode=numeric min=0 placeholder="ex. 230" value="${it.relm||''}"><button data-a=relm>OK</button></div>`}</div>`:''}
@@ -523,6 +573,16 @@ function overlay(){const f=F;if(!f)return'';
   ${P.seen?M('mzero','undo','Remettre à zéro','Décoche tous les '+u+'s.'):''}
   ${M('ext','ext','Voir sur '+(it.src==='tm'?'TMDB':'AniList'),'Ouvre la page de l’œuvre.')}
   ${inl?M('rm','trash','Retirer de ma liste','Efface aussi ta progression.','red'):''}</div></div>`}
+ if(f.k==='pf'){const G=[...new Set(secItems(SUBV).flatMap(x=>x.g||[]))].sort((a,b)=>a.localeCompare(b,'fr')),
+   grp=(g,L)=>`<div class=fch>${L.map(([v,l])=>`<button class="chip${PF[g]===v?' on':''}" data-a=pf data-g=${g} data-v="${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
+  return`<div class=sov data-a=fno><div class="sheet cfg"><div class=grab></div><h2>Filtres et tri</h2>
+  <div class=opl>TRIER PAR</div>${grp('sort',PSORT)}
+  ${G.length?`<div class=opl>GENRE</div>${grp('genre',G.map(g=>[g,g]))}`:''}
+  <div class=opl>STATUT DE L’ŒUVRE</div>${grp('st',PST)}
+  <div class=opl>MON SUIVI</div>${grp('us',UST)}
+  <button class=dbt data-a=pfr style="margin-top:22px">Réinitialiser</button><button class="dbt gr" data-a=pfc>Voir les résultats</button></div></div>`}
+ if(f.k==='pm'){const m=S.pm||'g3';return`<div class=sov data-a=fno><div class="sheet cfg"><div class=grab></div><h2>Affichage</h2>
+  ${PMODE.map(([v,l])=>`<button class="mi cp${m===v?' cur':''}" data-a=pm data-v=${v}><i>${SI(v==='list'?'list':v==='det'?'rows':'tiles',22)}</i><span><b>${l}</b><small>${v==='list'?'Une ligne compacte par œuvre.':v==='det'?'Genres, statut, avancement et prochaine sortie.':''}</small></span>${m===v?SI('check',20,3):''}</button>`).join('')}</div></div>`}
  if(f.k==='cfg'){const c=S.cfg,fld=(k,l,ph,t)=>`<div class="orow fld"><b>${l}</b><input class=soft data-cfg=${k} placeholder="${ph}" value="${esc(c[k])}" ${t||''} autocomplete=off autocapitalize=off spellcheck=false></div>`,
    MI=(a,i,t,sub,x)=>`<button class="mi${x?' gr':''}" data-a=${a}><i>${SI(i,24)}</i><span><b>${t}</b><small${a==='sync'?' id=msg':''}>${sub}</small></span></button>`;
   return`<div class=sov data-a=fno><div class="sheet cfg"><div class=grab></div><h2>Réglages</h2>
@@ -556,6 +616,13 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
  const it=VIEW&&obj(VIEW);
  if(a==='add'){const x=ensure(VIEW);touch(x);return render()}
  if(a==='us'){it.s=d.v;touch(it);return render()}
+ if(a==='pfo'){F={k:'pf'};return render()}
+ if(a==='pmo'){F={k:'pm'};return render()}
+ if(a==='pf'){const g=d.g,v=d.v;PF[g]=PF[g]===v&&g!=='sort'?null:v;b.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.v===PF[g]));return paintCat()}
+ if(a==='pfr'){const q=PF.q;PF=PF0();PF.q=q;document.querySelectorAll('.fch .chip').forEach(c=>c.classList.toggle('on',PF[c.dataset.g]===c.dataset.v));return paintCat()}
+ if(a==='pfc')return closeF();
+ if(a==='pm'){S.pm=d.v;persist();paintCat();return closeF()}
+ if(a==='cclr'){const q=$('#cq');q.value='';PF.q='';b.hidden=true;q.focus();return paintCat()}
  if(a==='hv'){S.hv=S.hv==='g'?'l':'g';persist();return render()}
  if(a==='epi'){F={k:'ep',key:VIEW,s:+d.s,e:+d.e};return render()}
  if(a==='menu'){F={k:'menu',key:VIEW};return render()}
@@ -583,9 +650,10 @@ function closeF(){const o=$('.sov');if(!F||!o||CL)return;CL=1;o.classList.add('o
 function setMsg(m){MSG=m;const el=$('#msg');if(el)el.textContent=m}
 function alertMsg(m){const el=$('#upto');if(el){el.value='';el.placeholder=m}}
 document.addEventListener('input',e=>{const t=e.target;
+ if(t.id==='cq'){PF.q=t.value;$('#cclr').hidden=!t.value;return paintCat()}
  if(t.id==='q'){Q=t.value.trim();$('#clr').hidden=!t.value;clearTimeout(ST);ST=setTimeout(search,450)}
  if(t.dataset.cfg){S.cfg[t.dataset.cfg]=t.value.trim();persist();if(t.dataset.cfg==='tmdb'){RES=DT==='M'?RES:null;RERR=''}}});
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='q'){clearTimeout(ST);e.target.blur();search()}if(e.key==='Enter'&&e.target.id==='upto')$('[data-a=upto]').click()});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='cq')e.target.blur();if(e.key==='Enter'&&e.target.id==='q'){clearTimeout(ST);e.target.blur();search()}if(e.key==='Enter'&&e.target.id==='upto')$('[data-a=upto]').click()});
 document.addEventListener('change',e=>{if(e.target.id!=='file'||!e.target.files[0])return;const r=new FileReader();
  r.onload=()=>{try{merge(JSON.parse(r.result));S.dirty=1;persist();setMsg('Import terminé.');schedSync()}catch{setMsg('Fichier illisible.')}};r.readAsText(e.target.files[0])});
 

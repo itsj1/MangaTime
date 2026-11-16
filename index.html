@@ -8,8 +8,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>MangaTime</title>
 <style>
-:root{--bg:#f5f5f2;--card:#fff;--ink:#0b0b0a;--mut:#6f6f6b;--acc:#ffd400;--act:#8a6d00;--tint:#fff1a8;--on:#1a1500;--red:#e5484d;--ok:#16a34a;--fin:#8b6cf0;--line:#e6e6e2;color-scheme:light}
-@media(prefers-color-scheme:dark){:root{--bg:#111213;--card:#1c1d1f;--ink:#f4f4f0;--mut:#9a9ca0;--acc:#ffd400;--act:#ffd400;--tint:#3b3410;--on:#1a1500;--red:#f06a6a;--ok:#34d27b;--fin:#b9a2ff;--line:#2f3134;color-scheme:dark}}
+:root{--bg:#f5f5f2;--card:#fff;--ink:#0b0b0a;--mut:#6f6f6b;--acc:#ffd400;--act:#8a6d00;--tint:#fff1a8;--on:#1a1500;--red:#e5484d;--ok:#16a34a;--fin:#8b6cf0;--old:#e8590c;--line:#e6e6e2;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#111213;--card:#1c1d1f;--ink:#f4f4f0;--mut:#9a9ca0;--acc:#ffd400;--act:#ffd400;--tint:#3b3410;--on:#1a1500;--red:#f06a6a;--ok:#34d27b;--fin:#b9a2ff;--old:#ff9f1a;--line:#2f3134;color-scheme:dark}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{overscroll-behavior-y:none}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 "Avenir Next","Trebuchet MS",system-ui,sans-serif;padding:env(safe-area-inset-top) 12px calc(100px + env(safe-area-inset-bottom))}
@@ -99,6 +99,14 @@ header.sh{justify-content:flex-start;gap:12px}
 /* Page catégorie du profil */
 .ib.on{background:var(--acc);border-color:var(--acc);color:var(--on)}
 .fch{display:flex;flex-wrap:wrap;gap:8px}
+.pgh{display:flex;align-items:center;gap:10px;width:100%;margin:22px 0 10px;text-align:left;color:var(--mut)}
+.pgh i{flex:none;width:12px;height:12px;border-radius:50%}
+.pgh span{flex:none;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.pgh hr{flex:1;border:0;border-top:1px solid var(--line);margin:0}
+.pgh svg{flex:none;transform:rotate(-90deg);transition:transform .15s}
+.pgh.cl svg{transform:rotate(90deg)}
+.pg .grid{margin-top:0}
+.pg-stale .pb i{background:var(--old)}
 .grid.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .grid.g4{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 8px}
 .grid.g4 .pc b{font-size:11px}
@@ -525,13 +533,25 @@ function catItems(){let X=secItems(SUBV);
  const pc=x=>prog(x).pct;
  return X.sort(PF.sort==='add'?(a,b)=>(b.a||0)-(a.a||0):PF.sort==='title'?(a,b)=>a.t.localeCompare(b.t,'fr'):PF.sort==='prog'?(a,b)=>pc(b)-pc(a):PF.sort==='year'?(a,b)=>(b.yr||0)-(a.yr||0):(a,b)=>lastW(b)-lastW(a))}
 const nFilt=()=>(PF.genre?1:0)+(PF.st?1:0)+(PF.us?1:0)+(PF.sort!=='seen'?1:0);
+/* Groupes de la page catégorie, comme dans TVTime */
+const PGRP=[['recent','Vu récemment','var(--acc)'],['stale','Pas regardé depuis un moment','var(--old)'],['utd','À jour','var(--ok)'],['done','Complété','var(--fin)'],['new','Pas commencé','var(--mut)'],['off','En pause ou abandonné','var(--mut)']],PGC=new Set();
+function grpOf(it,P){
+ if(it.s==='pause'||it.s==='drop')return'off';
+ if(it.s==='done'||(P.pct>=100&&!P.open&&ended(it)))return'done';
+ if(!P.seen)return'new';
+ if(!P.next)return'utd';
+ return Date.now()-lastW(it)>STALE?'stale':'recent'}
+function catList(X,m,mix){
+ if(m==='list'||m==='det')return X.map(it=>{const P=prog(it),o=nextOut(it),u=unit(it),cnt=P.open?(P.seen?'Ch. '+maxSeen(it):'Pas commencé'):P.seen+' / '+P.total+' '+u+'s';
+  return m==='list'?`<button class="cr" data-a=open data-k="${it.k}"><span class=th>${img(it)}</span><span class=tx><b>${esc(it.t)}</b><small>${[mix?it.lb:'',cnt,ustL(it.s)].filter(Boolean).join(' · ')}</small><span class="pb${barCls(it,P)}"><i style="width:${it.s==='done'?100:P.pct}%"></i></span></span></button>`
+  :`<button class="cr dt" data-a=open data-k="${it.k}"><span class=th>${img(it)}</span><span class=tx><b>${esc(it.t)}</b><small>${[it.lb,it.yr||'',STL[it.st]||''].filter(Boolean).join(' · ')}</small>${it.g&&it.g.length?`<small class=gn>${it.g.map(esc).join(' · ')}</small>`:''}<small>${cnt}${P.open?'':' · '+P.pct+' %'} · ${ustL(it.s)}</small>${o?`<small class=gn>${o.lab} · ${when(o).a.toLowerCase()}</small>`:''}<span class="pb${barCls(it,P)}"><i style="width:${it.s==='done'?100:P.pct}%"></i></span></span></button>`}).join('');
+ return`<div class="grid ${m}${mix?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`}
 function catHTML(){const X=catItems(),all=secItems(SUBV).length,m=S.pm||'g3',mix=SUBV==='plan';
  if(!X.length)return`<div class=empty><b>Aucun résultat</b>${all?'Aucune œuvre ne correspond à ta recherche ou à tes filtres.':'Cette catégorie est vide.'}</div>`;
  const head=X.length<all?`<p class=mut style="margin:10px 2px 0">${pl(X.length,'résultat')} sur ${all}</p>`:'';
- if(m==='list'||m==='det')return head+X.map(it=>{const P=prog(it),o=nextOut(it),u=unit(it),cnt=P.open?(P.seen?'Ch. '+maxSeen(it):'Pas commencé'):P.seen+' / '+P.total+' '+u+'s';
-  return m==='list'?`<button class="cr" data-a=open data-k="${it.k}"><span class=th>${img(it)}</span><span class=tx><b>${esc(it.t)}</b><small>${[mix?it.lb:'',cnt,ustL(it.s)].filter(Boolean).join(' · ')}</small><span class="pb${barCls(it,P)}"><i style="width:${it.s==='done'?100:P.pct}%"></i></span></span></button>`
-  :`<button class="cr dt" data-a=open data-k="${it.k}"><span class=th>${img(it)}</span><span class=tx><b>${esc(it.t)}</b><small>${[it.lb,it.yr||'',STL[it.st]||''].filter(Boolean).join(' · ')}</small>${it.g&&it.g.length?`<small class=gn>${it.g.map(esc).join(' · ')}</small>`:''}<small>${cnt}${P.open?'':' · '+P.pct+' %'} · ${ustL(it.s)}</small>${o?`<small class=gn>${o.lab} · ${when(o).a.toLowerCase()}</small>`:''}<span class="pb${barCls(it,P)}"><i style="width:${it.s==='done'?100:P.pct}%"></i></span></span></button>`}).join('');
- return head+`<div class="grid ${m}${mix?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`}
+ if(mix)return head+catList(X,m,mix);
+ const G={};X.forEach(it=>{const g=grpOf(it,prog(it));(G[g]=G[g]||[]).push(it)});
+ return head+PGRP.filter(([g])=>G[g]).map(([g,l,c])=>{const cl=PGC.has(g);return`<section class="pg pg-${g}"><button class="pgh${cl?' cl':''}" data-a=pgt data-v=${g}><i style="background:${c}"></i><span>${l} (${G[g].length})</span><hr>${SI('chev',14)}</button>${cl?'':catList(G[g],m,mix)}</section>`}).join('')}
 function paintCat(){const el=$('#cres');if(el)el.innerHTML=catHTML();const b=$('#fbt');if(b)b.classList.toggle('on',nFilt()>0)}
 function subView(){if(SUBV.startsWith('next:')){const t=SUBV.slice(5),X=homeSets().next.filter(x=>x.it.ty===t);return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${(HSEC.find(x=>x[0]===t)||[])[1]||''}<small>${X.length}</small></h1><span class=hbt style="margin-left:auto">${hvBtn()}</span></header>${nextHTML(X)}`}
  return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${CATL[SUBV]||''}<small>${secItems(SUBV).length}</small></h1><span class=hbt style="margin-left:auto"><button class="ib${nFilt()?' on':''}" id=fbt data-a=pfo aria-label="Filtres et tri">${SI('filt',20)}</button><button class=ib data-a=pmo aria-label="Mode d’affichage">${SI('dots',20,2.6)}</button></span></header>
@@ -621,6 +641,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
  if(a==='pf'){const g=d.g,v=d.v;PF[g]=PF[g]===v&&g!=='sort'?null:v;b.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.v===PF[g]));return paintCat()}
  if(a==='pfr'){const q=PF.q;PF=PF0();PF.q=q;document.querySelectorAll('.fch .chip').forEach(c=>c.classList.toggle('on',PF[c.dataset.g]===c.dataset.v));return paintCat()}
  if(a==='pfc')return closeF();
+ if(a==='pgt'){PGC.has(d.v)?PGC.delete(d.v):PGC.add(d.v);return paintCat()}
  if(a==='pm'){S.pm=d.v;persist();paintCat();return closeF()}
  if(a==='cclr'){const q=$('#cq');q.value='';PF.q='';b.hidden=true;q.focus();return paintCat()}
  if(a==='hv'){S.hv=S.hv==='g'?'l':'g';persist();return render()}

@@ -157,10 +157,21 @@ header.sh{justify-content:flex-start;gap:12px}
 
 .empty{text-align:center;color:var(--mut);padding:36px 20px;font-size:15px}
 .empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:6px}
-.stats{display:flex;gap:8px;text-align:center;margin:6px 0 4px}
-.stats div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 6px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;margin:6px 0 4px}
+.stats div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 6px}
 .stats b{display:block;font:800 22px "Avenir Next","Trebuchet MS",system-ui,sans-serif;color:var(--act)}
 .stats span{font-size:12px;color:var(--mut)}
+.stats.x3{grid-template-columns:1fr 1fr 1fr}
+.stats.x3 b{font-size:19px}
+.srow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 16px;border-top:1px solid var(--line);font-size:15px}
+.srow:first-child{border-top:0}
+.srow span{color:var(--mut)}
+.srow b{font-weight:700;text-align:right}
+.srow.sub{padding:8px 16px 8px 30px;font-size:14px;border-top:0}
+.srow.sub b{font-weight:600}
+.srow i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}
+.sbar{padding:4px 16px 14px}
+.sbar .pb{height:8px;margin:0}
 .note{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:12px;font-size:14px;color:var(--mut);margin:10px 0}
 .note button{color:var(--act);font-weight:700;text-decoration:underline}
 .err{color:var(--red);font-size:14px;margin:12px 0}
@@ -311,6 +322,7 @@ function applyTM(it,d){
  const l=d.last_episode_to_air,n=d.next_episode_to_air;
  it.la=l?[l.season_number,l.episode_number]:null;
  it.nx=n&&n.air_date?{s:n.season_number,e:n.episode_number,at:dloc(n.air_date),d:1}:null;
+ {const r=(d.episode_run_time||[]).filter(Boolean),l=(d.last_episode_to_air||{}).runtime;if(r.length)it.rt=Math.round(r.reduce((a,b)=>a+b,0)/r.length);else if(l&&!it.rt)it.rt=l}
  it.st=d.status==='Ended'?'fin':d.status==='Canceled'?'stop':it.la?'rel':'soon';it.yr=+(d.first_air_date||'').slice(0,4)||it.yr}
 /* Reporte les infos fraîches sur une œuvre sans toucher à ta progression */
 function meta(it,f){for(const k of['t','p','lb','tot','st','yr','nx','g'])it[k]=f[k]}
@@ -426,7 +438,8 @@ async function loadDet(k){const it=obj(k);if(!it)return;
    la saison 2 commence à l'épisode 27, pas 1. On cale donc chaque saison sur ses vrais numéros,
    et on décale la progression déjà cochée si la numérotation connue change. */
 function setSeason(it,D,n,epi){epi=(epi||[]).filter(e=>e.episode_number>0).sort((a,b)=>a.episode_number-b.episode_number);if(!epi.length)return;
- D.se[n]={};epi.forEach(e=>D.se[n][e.episode_number]={n:e.name,d:e.air_date,s:e.still_path,o:e.overview});
+ D.se[n]={};epi.forEach(e=>{D.se[n][e.episode_number]={n:e.name,d:e.air_date,s:e.still_path,o:e.overview};if(e.runtime>0){D.rtS=(D.rtS||0)+e.runtime;D.rtN=(D.rtN||0)+1}});
+ if(D.rtN)it.rt=Math.round(D.rtS/D.rtN);                 // durée moyenne réelle des épisodes chargés
  const x=(it.ss||[]).find(x=>x[0]===n);if(!x)return;
  const f=epi[0].episode_number,c=epi[epi.length-1].episode_number-f+1,f0=x[3]||1;
  if(f!==f0&&it.w&&it.w.length){it.w=it.w.map(id=>{const[a,b]=String(id).split('-');return +a===n?n+'-'+(+b-f0+f):id});if(S.items[it.k])touch(it)}
@@ -515,8 +528,39 @@ const listRow=([t,l])=>{const X=secItems(t);return X.length?`<h2 class=h2r><span
 function listView(){const all=Object.values(S.items);
  const epi=all.filter(x=>x.ty!=='M').reduce((a,x)=>a+x.w.length,0),ch=all.filter(x=>x.ty==='M').reduce((a,x)=>a+x.w.length,0);
  return`<header><h1>Profil</h1>${gear}</header>
- <div class=stats><div><b>${all.length}</b><span>œuvres</span></div><div><b>${epi}</b><span>épisodes vus</span></div><div><b>${ch}</b><span>chapitres lus</span></div></div>
+ <h2 class=h2r><span>Statistiques</span>${all.length?`<button data-a=all data-v=stats>Détails</button>`:''}</h2>
+ <div class=stats><div><b>${all.length}</b><span>œuvres suivies</span></div><div><b>${dur(all.reduce((a,x)=>a+mins(x),0))}</b><span>passés devant l’écran</span></div><div><b>${nf(epi)}</b><span>épisodes vus</span></div><div><b>${nf(ch)}</b><span>chapitres lus</span></div></div>
  ${SECS.map(listRow).join('')||`<div class=empty><b>Rien ici</b>Ajoute des œuvres depuis Discover.</div>`}`}
+
+/* ---------- Statistiques ---------- */
+const nf=n=>Number(n||0).toLocaleString('fr-FR');
+const RT0={A:24,T:45};                                             // durée par défaut si TMDB ne la donne pas
+const mins=it=>it.ty==='M'?0:(it.w||[]).length*(it.rt||RT0[it.ty]||0);
+function dur(m){m=Math.round(m);if(m<60)return m+' min';const h=Math.floor(m/60);if(h<48)return h+' h'+(m%60?' '+(m%60)+' min':'');return Math.floor(h/24)+' j '+(h%24)+' h'}
+function typeStats(t){const X=Object.values(S.items).filter(x=>x.ty===t),r={n:X.length,seen:0,left:0,avail:0,mins:0,minsLeft:0,est:0,g:{},grp:{},top:null,topN:0,first:0};
+ X.forEach(it=>{const P=prog(it),n=(it.w||[]).length,rt=it.rt||RT0[t]||0;r.seen+=n;r.mins+=n*rt;if(t!=='M'&&n&&!it.rt)r.est=1;
+  if(!P.open){r.left+=P.left;r.avail+=P.left+P.seen;r.minsLeft+=P.left*rt}else r.avail+=P.seen;
+  const g=grpOf(it,P);r.grp[g]=(r.grp[g]||0)+1;(it.g||[]).forEach(x=>r.g[x]=(r.g[x]||0)+Math.max(n,1));
+  if(n>r.topN){r.topN=n;r.top=it}if(it.a&&(!r.first||it.a<r.first))r.first=it.a});
+ r.genres=Object.entries(r.g).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);return r}
+function statsView(){const T=[['T','Séries'],['A','Animés'],['M','Mangas']].map(([t,l])=>({t,l,r:typeStats(t)})),all=Object.values(S.items),
+  tot=T.reduce((a,x)=>a+x.r.mins,0),ep=T[0].r.seen+T[1].r.seen,ch=T[2].r.seen,done=T.reduce((a,x)=>a+(x.r.grp.done||0),0),first=Math.min(...all.map(x=>x.a||Infinity)),est=T.some(x=>x.r.est);
+ const row=(l,v,c)=>`<div class="srow${c?' sub':''}"><span>${c?`<i style="background:${c}"></i>`:''}${l}</span><b>${v}</b></div>`;
+ const block=({t,l,r})=>{if(!r.n)return'';const u=t==='M'?'chapitre':'épisode',U=t==='M'?'Chapitres':'Épisodes',pct=r.avail?Math.round(r.seen/r.avail*100):0,G=r.grp,e=t==='T'?'e':'';
+  return`<div class=opl>${l.toUpperCase()}</div><div class=ocard>
+  ${row(l+' suivi'+e+'s',nf(r.n))}
+  ${row('Vu'+e+'s récemment',G.recent||0,'var(--acc)')}${row('Pas regardé'+e+'s depuis un moment',G.stale||0,'var(--old)')}${row('À jour',G.utd||0,'var(--ok)')}${row('Complété'+e+'s',G.done||0,'var(--fin)')}${row('Pas commencé'+e+'s',G.new||0,'var(--mut)')}${G.off?row('En pause ou abandonné'+e+'s',G.off,'var(--mut)'):''}
+  ${row(U+(t==='M'?' lus':' vus'),nf(r.seen))}
+  ${row(U+' restants à '+(t==='M'?'lire':'voir'),nf(r.left))}
+  ${t==='M'?'':row('Temps passé',dur(r.mins)+(r.mins>=2880?' ('+nf(Math.round(r.mins/60))+' h)':''))+row('Temps pour tout rattraper',r.left?dur(r.minsLeft):'—')}
+  ${row('Avancement global',pct+' %')}<div class=sbar><div class=pb><i style="width:${pct}%"></i></div></div>
+  ${r.top?row(t==='M'?'Le plus lu':'Le plus regardé',esc(r.top.t)+' · '+pl(r.topN,u)):''}
+  ${r.genres.length?row('Genres favoris',r.genres.map(esc).join(', ')):''}</div>`};
+ return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>Statistiques</h1></header>
+ <div class="stats x3" style="margin-top:14px"><div><b>${nf(all.length)}</b><span>œuvres</span></div><div><b>${nf(done)}</b><span>complétées</span></div><div><b>${dur(tot)}</b><span>temps passé</span></div><div><b>${nf(ep)}</b><span>épisodes vus</span></div><div><b>${nf(ch)}</b><span>chapitres lus</span></div><div><b>${nf(T[0].r.left+T[1].r.left)}</b><span>épisodes à voir</span></div></div>
+ ${isFinite(first)?`<p class=mut style="margin:10px 2px 0">Suivi depuis le ${new Date(first).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}.</p>`:''}
+ ${T.map(block).join('')}
+ <p class=cred>Le temps passé compte les épisodes cochés multipliés par leur durée moyenne${est?' ; quand TMDB ne la fournit pas, l’app compte 24 min par épisode d’animé et 45 min par épisode de série':''}. Les mangas n’ont pas de durée.</p>`}
 
 /* ---------- Page d'une catégorie ---------- */
 const PF0=()=>({q:'',sort:'seen',genre:null,st:null,us:null});let PF=PF0();
@@ -555,7 +599,8 @@ function catHTML(){const X=catItems(),all=secItems(SUBV).length,m=S.pm||'g3',mix
  /* les quatre groupes principaux restent affichés même vides (0) ; les deux autres seulement s'ils contiennent quelque chose */
  return head+PGRP.filter(([g],i)=>i<4||G[g]).map(([g,l,c])=>{const cl=PGC.has(g),L=G[g]||[];return`<section class="pg pg-${g}"><button class="pgh${cl?' cl':''}" data-a=pgt data-v=${g}><i style="background:${c}"></i><span>${l} (${L.length})</span><hr>${SI('chev',14)}</button>${cl||!L.length?'':catList(L,m,mix)}</section>`}).join('')}
 function paintCat(){const el=$('#cres');if(el)el.innerHTML=catHTML();const b=$('#fbt');if(b)b.classList.toggle('on',nFilt()>0)}
-function subView(){if(SUBV.startsWith('next:')){const t=SUBV.slice(5),X=homeSets().next.filter(x=>x.it.ty===t);return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${(HSEC.find(x=>x[0]===t)||[])[1]||''}<small>${X.length}</small></h1><span class=hbt style="margin-left:auto">${hvBtn()}</span></header>${nextHTML(X)}`}
+function subView(){if(SUBV==='stats')return statsView();
+ if(SUBV.startsWith('next:')){const t=SUBV.slice(5),X=homeSets().next.filter(x=>x.it.ty===t);return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${(HSEC.find(x=>x[0]===t)||[])[1]||''}<small>${X.length}</small></h1><span class=hbt style="margin-left:auto">${hvBtn()}</span></header>${nextHTML(X)}`}
  return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${CATL[SUBV]||''}<small>${secItems(SUBV).length}</small></h1><span class=hbt style="margin-left:auto"><button class="ib${nFilt()?' on':''}" id=fbt data-a=pfo aria-label="Filtres et tri">${SI('filt',20)}</button><button class=ib data-a=pmo aria-label="Mode d’affichage">${SI('dots',20,2.6)}</button></span></header>
  <div class=srch>${SI('search',20)}<input id=cq type=search placeholder="Titre, genre, année, statut…" value="${esc(PF.q)}" autocomplete=off enterkeyhint=search><button class=clr id=cclr data-a=cclr aria-label="Effacer la recherche" ${PF.q?'':'hidden'}>${SI('x',16,2.4)}</button></div>
  <div id=cres>${catHTML()}</div>`}

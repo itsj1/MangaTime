@@ -202,10 +202,12 @@ async function tm(path,params){const key=(S.cfg.tmdb||'').trim();if(!key)throw n
  const u=new URL('https://api.themoviedb.org/3/'+path);u.searchParams.set('language','fr-FR');for(const k in params||{})u.searchParams.set(k,params[k]);
  const h={Accept:'application/json'};if(key.length>60)h.Authorization='Bearer '+key;else u.searchParams.set('api_key',key);
  const r=await fetch(u,{headers:h});if(r.status===401)throw new Error('Clé TMDB refusée : vérifie-la dans les réglages.');if(!r.ok)throw new Error('TMDB '+r.status);return r.json()}
-const fromTM=r=>({k:'tm:'+r.id,src:'tm',id:r.id,ty:'T',t:r.name||r.original_name||'Sans titre',p:r.poster_path?IMG+'w342'+r.poster_path:'',lb:'Série',tot:0,st:'',yr:+(r.first_air_date||'').slice(0,4)||0,nx:null});
+/* Animé = animation d'origine japonaise ; TMDB regroupe toutes les saisons dans une seule fiche */
+const isAni=r=>(r.genre_ids||(r.genres||[]).map(g=>g.id)).includes(16)&&r.original_language==='ja';
+const fromTM=r=>({k:'tm:'+r.id,src:'tm',id:r.id,ty:isAni(r)?'A':'T',t:r.name||r.original_name||'Sans titre',p:r.poster_path?IMG+'w342'+r.poster_path:'',lb:isAni(r)?'Animé':'Série',tot:0,st:'',yr:+(r.first_air_date||'').slice(0,4)||0,nx:null});
 const dloc=d=>{const[y,m,j]=d.split('-').map(Number);return new Date(y,m-1,j).getTime()};
 function applyTM(it,d){
- it.t=d.name||it.t;if(d.poster_path)it.p=IMG+'w342'+d.poster_path;
+ it.t=d.name||it.t;if(d.genres&&d.original_language){const an=isAni(d);it.ty=an?'A':'T';it.lb=an?'Animé':'Série'}if(d.poster_path)it.p=IMG+'w342'+d.poster_path;
  it.ss=(d.seasons||[]).filter(s=>s.season_number>0&&s.episode_count>0).map(s=>[s.season_number,s.episode_count,s.name||'Saison '+s.season_number]);
  it.tot=it.ss.reduce((a,s)=>a+s[1],0);
  const l=d.last_episode_to_air,n=d.next_episode_to_air;
@@ -279,7 +281,9 @@ async function refreshAll(force){
 let ST=0,SEQ=0;
 async function search(){const seq=++SEQ;BUSY=true;RERR='';paintRes();
  try{let L;
-  if(DT==='T'){const d=Q?await tm('search/tv',{query:Q}):await tm('trending/tv/week');L=d.results.map(fromTM)}
+  if(DT==='T'||(DT==='A'&&S.cfg.tmdb)){const A=DT==='A';
+   const d=Q?await tm('search/tv',{query:Q}):A?await tm('discover/tv',{with_genres:16,with_original_language:'ja',sort_by:'popularity.desc'}):await tm('trending/tv/week');
+   L=d.results.map(fromTM).filter(x=>(x.ty==='A')===A)}
   else{const t=DT==='A'?'ANIME':'MANGA';
    const d=Q?await al(`query($q:String,$t:MediaType){Page(perPage:30){media(search:$q,type:$t,sort:POPULARITY_DESC,isAdult:false){${ALF}}}}`,{q:Q,t})
             :await al(`query($t:MediaType){Page(perPage:30){media(type:$t,sort:TRENDING_DESC,isAdult:false){${ALF}}}}`,{t});
@@ -307,6 +311,7 @@ function groups(it,L){
  if(L.length<=30)return[{id:'0',t:'',L}];
  const G=[];for(let i=0;i<L.length;i+=25){const c=L.slice(i,i+25);G.push({id:String(i),t:(it.ty==='M'?'Chapitres ':'Épisodes ')+c[0].e+' – '+c[c.length-1].e,L:c})}return G}
 function initOpen(k){if(OPEN[k])return;const it=obj(k),P=prog(it),G=groups(it,P.L);if(!G.length)return;
+ if(it.src==='tm'&&G.length>1){OPEN[k]=new Set();return}          // plusieurs saisons : toutes repliées, on ouvre celle qu'on veut
  const g=G.find(g=>P.next&&g.L.includes(P.next))||(P.seen?G[G.length-1]:G[0]);OPEN[k]=new Set([g.id])}
 function openDet(k){SCR=scrollY;VIEW=k;initOpen(k);history.pushState({v:k},'');render();scrollTo(0,0);loadDet(k)}
 addEventListener('popstate',()=>{if(F){F=null}VIEW=null;render();scrollTo(0,SCR)});
@@ -330,7 +335,7 @@ function resHTML(){
 function paintRes(){const el=$('#res');if(el&&TAB==='disc'&&!VIEW)el.innerHTML=resHTML()}
 function discView(){return`<header><h1>Discover</h1>${gear}</header>
  <div class=srch>${SI('search',20)}<input id=q type=search placeholder="Rechercher un titre…" value="${esc(Q)}" autocomplete=off enterkeyhint=search></div>
- ${chips([['A','Animés'],['M','Mangas & Webtoons'],['T','Séries']],DT,'dt')}<div id=res>${resHTML()}</div>`}
+ ${chips([['A','Animés'],['M','Mangas & Webtoons'],['T','Séries']],DT,'dt')}${DT==='A'&&!S.cfg.tmdb?`<div class=note>Sans clé TMDB, chaque saison d’un animé apparaît comme une œuvre séparée. <button data-a=cfg>Ajouter ma clé</button> pour les regrouper.</div>`:''}<div id=res>${resHTML()}</div>`}
 
 function homeView(){const all=Object.values(S.items);
  const cont=all.filter(it=>it.s==='cur').map(it=>({it,P:prog(it)})).filter(x=>x.P.next).sort((a,b)=>(b.it.u||0)-(a.it.u||0));
@@ -365,7 +370,7 @@ function detView(){const it=obj(VIEW);if(!it)return'';const inl=!!S.items[it.k],
  ${D&&D.desc?`<p class=desc data-a=desc>${esc(D.desc)}</p>`:''}
  ${it.ty==='M'?`<div class=box><label>J’en suis au chapitre…</label><div class=inl><input id=upto type=number inputmode=numeric min=0 placeholder="ex. 132" value="${maxSeen(it)||''}"><button data-a=upto>OK</button></div></div>
   ${it.st!=='fin'&&it.st!=='stop'?`<div class=box><label>Jour de sortie habituel (pour estimer le prochain chapitre)</label><div class=days>${['L','M','M','J','V','S','D'].map((l,i)=>{const d=(i+1)%7;return`<button class="${it.day===d?'on':''}" data-a=day data-v=${d}>${l}</button>`}).join('')}</div></div>`:''}`:''}
- <h2>${it.ty==='M'?'Chapitres':'Épisodes'}</h2>
+ <h2>${it.ty==='M'?'Chapitres':it.src==='tm'&&G.length>1?'Saisons':'Épisodes'}</h2>
  ${D&&D.err?`<p class=err>${esc(D.err)}</p>`:''}${body||(D?`<div class=note>Aucun ${u} annoncé pour l’instant.</div>`:`<div class=empty>Chargement…</div>`)}
  ${inl?`<button class=rm data-a=rm>Retirer de ma liste</button>`:''}`}
 
@@ -416,12 +421,12 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
  if(a==='exp'){const u=URL.createObjectURL(new Blob([JSON.stringify({items:S.items,del:S.del},null,1)],{type:'application/json'})),l=document.createElement('a');l.href=u;l.download='mangatime-'+new Date().toISOString().slice(0,10)+'.json';l.click();return setTimeout(()=>URL.revokeObjectURL(u),2e3)}
  if(a==='imp')return $('#file').click()});
 let CL=0;
-function closeF(){const o=$('.sov');if(!F||!o||CL)return;CL=1;o.classList.add('out');setTimeout(()=>{CL=0;F=null;render()},o.classList.contains('pop')?200:280)}
+function closeF(){const o=$('.sov');if(!F||!o||CL)return;CL=1;o.classList.add('out');setTimeout(()=>{CL=0;F=null;render();if(TAB==='disc'&&!VIEW&&!RES)search()},o.classList.contains('pop')?200:280)}
 function setMsg(m){MSG=m;const el=$('#msg');if(el)el.textContent=m}
 function alertMsg(m){const el=$('#upto');if(el){el.value='';el.placeholder=m}}
 document.addEventListener('input',e=>{const t=e.target;
  if(t.id==='q'){Q=t.value.trim();clearTimeout(ST);ST=setTimeout(search,450)}
- if(t.dataset.cfg){S.cfg[t.dataset.cfg]=t.value.trim();persist();if(t.dataset.cfg==='tmdb'){RES=DT==='T'?null:RES;RERR=''}}});
+ if(t.dataset.cfg){S.cfg[t.dataset.cfg]=t.value.trim();persist();if(t.dataset.cfg==='tmdb'){RES=DT==='M'?RES:null;RERR=''}}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='q'){clearTimeout(ST);e.target.blur();search()}if(e.key==='Enter'&&e.target.id==='upto')$('[data-a=upto]').click()});
 document.addEventListener('change',e=>{if(e.target.id!=='file'||!e.target.files[0])return;const r=new FileReader();
  r.onload=()=>{try{merge(JSON.parse(r.result));S.dirty=1;persist();setMsg('Import terminé.');schedSync()}catch{setMsg('Fichier illisible.')}};r.readAsText(e.target.files[0])});

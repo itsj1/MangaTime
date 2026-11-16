@@ -376,7 +376,7 @@ function overlay(){const f=F;if(!f)return'';
  if(f.k==='cfg'){const c=S.cfg,fld=(k,l,ph,t)=>`<div class="orow fld"><b>${l}</b><input class=soft data-cfg=${k} placeholder="${ph}" value="${esc(c[k])}" ${t||''} autocomplete=off autocapitalize=off spellcheck=false></div>`,
    MI=(a,i,t,sub,x)=>`<button class="mi${x?' gr':''}" data-a=${a}><i>${SI(i,24)}</i><span><b>${t}</b><small${a==='sync'?' id=msg':''}>${sub}</small></span></button>`;
   return`<div class=sov data-a=fno><div class="sheet cfg"><div class=grab></div><h2>Réglages</h2>
-  <div class=opl>CLÉ THE MOVIE DB</div><div class=ocard>${fld('tmdb','Clé API','Colle ta clé TMDB ici','type=password')}</div>
+  <div class=opl>THEMOVIEDB.ORG</div><div class=ocard>${fld('tmdb','Clé API','Colle ta clé TMDB ici','type=password')}</div>
   <div class=opl>SYNCHRONISATION GITHUB</div><div class=ocard>${fld('repo','Dépôt privé','utilisateur/depot-prive')}${fld('path','Fichier','mangatime-data.json')}${fld('token','Jeton d’accès','','type=password')}</div>
   ${MI('sync','sync','Synchroniser maintenant',esc(MSG)||'Envoie et récupère tes données.',1)}
   <div class=opl>SAUVEGARDE</div>${MI('exp','down','Exporter mes données','Télécharge une copie de ta liste.')}${MI('imp','upl','Importer un fichier','Fusionne une sauvegarde avec ta liste.')}<input id=file type=file accept="application/json,.json" hidden>

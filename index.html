@@ -64,6 +64,15 @@ input:focus{border-color:var(--acc)}
 .hs .pc{flex:none;width:calc((100% - 30px)/4.2);scroll-snap-align:start}
 .hs .pc b{font-size:12px}
 .hs .tg{display:none}
+.hs.mix .tg{display:block;font-size:8px;padding:2px 5px;left:4px;top:4px}
+.gen{font-size:13px;color:var(--act);margin-top:3px}
+.hs.cast{gap:12px}
+.ca{flex:none;width:84px;text-align:center;scroll-snap-align:start}
+.ph2{display:grid;place-items:center;width:76px;height:76px;margin:0 auto 6px;border-radius:50%;overflow:hidden;background:var(--card);border:1px solid var(--line);color:var(--mut);font-weight:700}
+.ph2 img{width:100%;height:100%;object-fit:cover;display:block}
+.ca b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px;line-height:1.25;font-weight:600}
+.ca small{display:block;font-size:11px;line-height:1.25;color:var(--mut);margin-top:2px}
+.ca em{display:inline-block;margin-top:4px;font-style:normal;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--tint);color:var(--act)}
 h2 small{font-weight:500;font-size:14px;color:var(--mut);margin-left:6px}
 
 /* Lignes de l'accueil */
@@ -200,20 +209,21 @@ const BR={},DET={},OPEN={};          // œuvres vues en recherche, détails char
 const obj=k=>S.items[k]||BR[k];
 
 /* Icônes */
-const IC={search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',home:'<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>',list:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',back:'<path d="m15 5-7 7 7 7"/>',chev:'<path d="m9 5 7 7-7 7"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',sync:'<path d="M20 11a8 8 0 0 0-14.3-4.4L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.4l1.7-1.9"/><path d="M20 20v-4.5h-4.5"/>',down:'<path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>',upl:'<path d="M12 16V5"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',dots:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',plus:'<path d="M12 5v14M5 12h14"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',undo:'<path d="M4 8h10a6 6 0 0 1 0 12H8"/><path d="m8 4-4 4 4 4"/>',ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>'};
+const IC={search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',home:'<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>',list:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',back:'<path d="m15 5-7 7 7 7"/>',chev:'<path d="m9 5 7 7-7 7"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',sync:'<path d="M20 11a8 8 0 0 0-14.3-4.4L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.4l1.7-1.9"/><path d="M20 20v-4.5h-4.5"/>',down:'<path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>',upl:'<path d="M12 16V5"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',dots:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',plus:'<path d="M12 5v14M5 12h14"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',undo:'<path d="M4 8h10a6 6 0 0 1 0 12H8"/><path d="m8 4-4 4 4 4"/>',ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',mark:'<path d="M6 4h12v17l-6-4.5L6 21z"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>'};
 const SI=(n,z=22,w=2)=>`<svg width=${z} height=${z} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
 
 /* ============ Sources de données ============ */
-const ALF='id type format status episodes chapters countryOfOrigin startDate{year} title{romaji english} coverImage{large} nextAiringEpisode{episode airingAt}';
+const ALF='id type format status episodes chapters genres countryOfOrigin startDate{year} title{romaji english} coverImage{large} nextAiringEpisode{episode airingAt}';
 async function al(query,variables){
  const r=await fetch('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({query,variables})});
  if(r.status===429)throw new Error('Trop de requêtes vers AniList, réessaie dans une minute.');
  const j=await r.json();if(j.errors)throw new Error('AniList : '+j.errors[0].message);return j.data}
+const GFR={Adventure:'Aventure',Comedy:'Comédie',Drama:'Drame',Fantasy:'Fantastique',Horror:'Horreur',Mystery:'Mystère','Sci-Fi':'Science-fiction','Slice of Life':'Tranche de vie',Sports:'Sport',Supernatural:'Surnaturel',Psychological:'Psychologique',Music:'Musique'};
 function fromAL(m){const A=m.type==='ANIME',nx=m.nextAiringEpisode;
  return{k:'al:'+m.id,src:'al',id:m.id,ty:A?'A':'M',t:m.title.english||m.title.romaji||'Sans titre',p:(m.coverImage||{}).large||'',
   lb:A?({MOVIE:'Film',OVA:'OVA',ONA:'ONA',SPECIAL:'Spécial'}[m.format]||'Animé'):m.format==='NOVEL'?'Roman':({KR:'Manhwa',CN:'Manhua'}[m.countryOfOrigin]||'Manga'),
   tot:(A?m.episodes:m.chapters)||0,st:{FINISHED:'fin',RELEASING:'rel',NOT_YET_RELEASED:'soon',CANCELLED:'stop',HIATUS:'hia'}[m.status]||'',yr:(m.startDate||{}).year||0,
-  nx:nx?{e:nx.episode,at:nx.airingAt*1000}:null}}
+  g:(m.genres||[]).slice(0,3).map(x=>GFR[x]||x),nx:nx?{e:nx.episode,at:nx.airingAt*1000}:null}}
 async function tm(path,params){const key=(S.cfg.tmdb||'').trim();if(!key)throw new Error('NOKEY');
  const u=new URL('https://api.themoviedb.org/3/'+path);u.searchParams.set('language','fr-FR');for(const k in params||{})u.searchParams.set(k,params[k]);
  const h={Accept:'application/json'};if(key.length>60)h.Authorization='Bearer '+key;else u.searchParams.set('api_key',key);
@@ -223,7 +233,7 @@ const isAni=r=>(r.genre_ids||(r.genres||[]).map(g=>g.id)).includes(16)&&r.origin
 const fromTM=r=>({k:'tm:'+r.id,src:'tm',id:r.id,ty:isAni(r)?'A':'T',t:r.name||r.original_name||'Sans titre',p:r.poster_path?IMG+'w342'+r.poster_path:'',lb:isAni(r)?'Animé':'Série',tot:0,st:'',yr:+(r.first_air_date||'').slice(0,4)||0,nx:null});
 const dloc=d=>{const[y,m,j]=d.split('-').map(Number);return new Date(y,m-1,j).getTime()};
 function applyTM(it,d){
- it.t=d.name||it.t;if(d.genres&&d.original_language){const an=isAni(d);it.ty=an?'A':'T';it.lb=an?'Animé':'Série'}if(d.poster_path)it.p=IMG+'w342'+d.poster_path;
+ it.t=d.name||it.t;if(d.genres&&d.original_language){const an=isAni(d);it.ty=an?'A':'T';it.lb=an?'Animé':'Série';it.g=d.genres.filter(g=>g.id!==16||!an).slice(0,3).map(g=>g.name)}if(d.poster_path)it.p=IMG+'w342'+d.poster_path;
  it.ss=(d.seasons||[]).filter(s=>s.season_number>0&&s.episode_count>0).map(s=>[s.season_number,s.episode_count,s.name||'Saison '+s.season_number]);
  it.tot=it.ss.reduce((a,s)=>a+s[1],0);
  const l=d.last_episode_to_air,n=d.next_episode_to_air;
@@ -231,7 +241,7 @@ function applyTM(it,d){
  it.nx=n&&n.air_date?{s:n.season_number,e:n.episode_number,at:dloc(n.air_date),d:1}:null;
  it.st=d.status==='Ended'?'fin':d.status==='Canceled'?'stop':it.la?'rel':'soon';it.yr=+(d.first_air_date||'').slice(0,4)||it.yr}
 /* Reporte les infos fraîches sur une œuvre sans toucher à ta progression */
-function meta(it,f){for(const k of['t','p','lb','tot','st','yr','nx'])it[k]=f[k]}
+function meta(it,f){for(const k of['t','p','lb','tot','st','yr','nx','g'])it[k]=f[k]}
 
 /* ============ Épisodes / chapitres ============ */
 const seenSet=it=>new Set(it.w||[]);
@@ -255,7 +265,7 @@ function prog(it){const L=eps(it),w=seenSet(it);let seen=0,left=0,next=null;
 const parseId=(it,v)=>it.src==='tm'?v:+v;
 
 function ensure(k){let it=S.items[k];if(it)return it;it=BR[k];if(!it)return null;
- it.w=it.w||[];it.s='plan';it.a=Date.now();S.items[k]=it;delete S.del[k];return it}
+ it.w=it.w||[];it.s='cur';it.a=Date.now();S.items[k]=it;delete S.del[k];return it}
 function commit(it,w){const L=eps(it);it.w=L.filter(x=>w.has(x.id)).map(x=>x.id);
  const all=L.length&&L.every(x=>w.has(x.id));
  if(all&&(it.st==='fin'||it.st==='stop'))it.s='done';
@@ -282,7 +292,7 @@ function when(o){const dd=Math.round((new Date(new Date(o.at).setHours(0,0,0,0))
  const a=dd<=0?'Aujourd’hui':dd===1?'Demain':dd<7?D.toLocaleDateString('fr-FR',{weekday:'long'}).replace(/^./,c=>c.toUpperCase()):D.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
  return{a,b:dd<=1?h:(dd<7?D.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+(h?' · '+h:''):'dans '+dd+' j')}}
 const STL={fin:'Terminé',rel:'En cours de sortie',soon:'Pas encore sorti',stop:'Annulé',hia:'En pause'};
-const UST=[['cur','En cours'],['plan','À voir'],['done','Terminé'],['pause','En pause'],['drop','Abandonné']];
+const UST=[['cur','En cours'],['plan','À voir plus tard'],['done','Terminé'],['pause','En pause'],['drop','Abandonné']];
 
 /* Rafraîchit les dates des œuvres suivies (au lancement, toutes les 6 h au plus) */
 async function refreshAll(force){
@@ -315,7 +325,9 @@ async function loadDet(k){const it=obj(k);if(!it)return;
    const d=await al(`query($id:Int){Media(id:$id){${ALF} description(asHtml:false) bannerImage genres airingSchedule(notYetAired:true,perPage:25){nodes{episode airingAt}}}}`,{id:it.id}),m=d.Media;
    meta(it,fromAL(m));const sc={};((m.airingSchedule||{}).nodes||[]).forEach(n=>sc[n.episode]=n.airingAt*1000);
    DET[k]={desc:(m.description||'').replace(/<br\s*\/?>/gi,' ').replace(/<[^>]+>/g,''),ban:m.bannerImage||'',gen:m.genres||[],sc,se:{}}}
-  else{const d=await tm('tv/'+it.id);applyTM(it,d);DET[k]={desc:d.overview||'',ban:d.backdrop_path?IMG+'w780'+d.backdrop_path:'',gen:(d.genres||[]).map(g=>g.name),sc:{},se:{}}}
+  else{const d=await tm('tv/'+it.id,{append_to_response:'aggregate_credits'});applyTM(it,d);
+   const cast=((d.aggregate_credits||{}).cast||[]).slice(0,20).map(c=>{const r=((c.roles||[])[0]||{}).character||'';return{n:c.name,p:c.profile_path?IMG+'w185'+c.profile_path:'',r:r.replace(/\s*\(voice\)/ig,'').trim(),v:it.ty==='A'||/\(voice\)/i.test(r)}});
+   DET[k]={cast,desc:d.overview||'',ban:d.backdrop_path?IMG+'w780'+d.backdrop_path:'',gen:(d.genres||[]).map(g=>g.name),sc:{},se:{}}}
   it.nf=Date.now();if(S.items[k])persist()}
  catch(e){DET[k]=DET[k]||{desc:'',ban:'',gen:[],sc:{},se:{},err:e.message==='NOKEY'?'Ajoute ta clé TMDB dans les réglages pour charger les épisodes.':e.message}}
  if(VIEW===k){initOpen(k);render();const g=[...(OPEN[k]||[])][0];if(it.src==='tm'&&g)loadSeason(k,g)}}
@@ -327,7 +339,7 @@ function groups(it,L){
  if(L.length<=30)return[{id:'0',t:'',L}];
  const G=[];for(let i=0;i<L.length;i+=25){const c=L.slice(i,i+25);G.push({id:String(i),t:(it.ty==='M'?'Chapitres ':'Épisodes ')+c[0].e+' – '+c[c.length-1].e,L:c})}return G}
 function initOpen(k){if(OPEN[k])return;const it=obj(k),P=prog(it),G=groups(it,P.L);if(!G.length)return;
- if(it.src==='tm'&&G.length>1){OPEN[k]=new Set();return}          // plusieurs saisons : toutes repliées, on ouvre celle qu'on veut
+ if(it.src==='tm'){OPEN[k]=new Set();return}                       // saisons repliées par défaut, on ouvre celle qu'on veut
  const g=G.find(g=>P.next&&g.L.includes(P.next))||(P.seen?G[G.length-1]:G[0]);OPEN[k]=new Set([g.id])}
 function openDet(k){SCR=scrollY;VIEW=k;initOpen(k);history.pushState({v:k},'');render();scrollTo(0,0);loadDet(k)}
 addEventListener('popstate',()=>{if(F){F=null}VIEW=null;render();scrollTo(0,SCR)});
@@ -364,7 +376,9 @@ function homeView(){const all=Object.values(S.items);
 function listView(){const all=Object.values(S.items);
  const epi=all.filter(x=>x.ty!=='M').reduce((a,x)=>a+x.w.length,0),ch=all.filter(x=>x.ty==='M').reduce((a,x)=>a+x.w.length,0);
  const L=all.filter(x=>FS==='all'||x.s===FS).sort((a,b)=>(b.u||b.a||0)-(a.u||a.a||0));
- const sec=[['T','Mes séries'],['A','Mes animés'],['M','Mes mangas']].map(([t,l])=>{const X=L.filter(x=>x.ty===t);return X.length?`<h2>${l}<small>${X.length}</small></h2><div class=hs>${X.map(x=>card(x,'list')).join('')}</div>`:''}).join('');
+ const row=(l,X,mix)=>X.length?`<h2>${l}<small>${X.length}</small></h2><div class="hs${mix?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`:'';
+ const later=FS==='all'||FS==='plan'?row('À voir plus tard',L.filter(x=>x.s==='plan'),1):'';
+ const sec=later+[['T','Mes séries'],['A','Mes animés'],['M','Mes mangas']].map(([t,l])=>{const X=L.filter(x=>x.ty===t&&x.s!=='plan');return X.length?`<h2>${l}<small>${X.length}</small></h2><div class=hs>${X.map(x=>card(x,'list')).join('')}</div>`:''}).join('');
  return`<header><h1>My List</h1>${gear}</header>
  <div class=stats><div><b>${all.length}</b><span>œuvres</span></div><div><b>${epi}</b><span>épisodes vus</span></div><div><b>${ch}</b><span>chapitres lus</span></div></div>
  ${chips([['all','Tous les statuts'],...UST],FS,'fs')}
@@ -380,7 +394,7 @@ function detView(){const it=obj(VIEW);if(!it)return'';const inl=!!S.items[it.k],
   const op=O.has(g.id);return`<div class="gp${op?' op':''}"><div class=gh><button class=gt data-a=grp data-g="${g.id}">${SI('chev',16)}<b>${esc(g.t)}</b><small>${s} / ${g.L.length}</small></button><button class="ck${full?' on':''}" data-a=gall data-g="${g.id}" ${ok?'':'disabled'} aria-label="Tout marquer">${SI('check',20,3)}</button></div>${op?g.L.map(row).join('')+(last?more:''):''}</div>`}).join('');
  return`<button class=bk data-a=back aria-label="Retour">${SI('back',22)}</button><button class="bk mo" data-a=menu aria-label="Plus d’actions">${SI('dots',22,2.6)}</button>
  <div class=hero style="${D&&D.ban?`background-image:url('${esc(D.ban)}')`:''}"></div>
- <div class=hd><div class=po>${img(it)}</div><div><h1>${esc(it.t)}</h1><div class=mut>${[it.lb,it.yr||'',STL[it.st]||''].filter(Boolean).join(' · ')}</div></div></div>
+ <div class=hd><div class=po>${img(it)}</div><div><h1>${esc(it.t)}</h1><div class=mut>${[it.lb,it.yr||'',STL[it.st]||''].filter(Boolean).join(' · ')}</div>${it.g&&it.g.length?`<div class=gen>${it.g.map(esc).join(' · ')}</div>`:''}</div></div>
  ${inl?chips(UST,it.s,'us'):`<button class=big data-a=add>+ Ajouter à ma liste</button>`}
  ${inl||P.seen?`<div class=prg><div class="pb${P.pct>=100&&!P.open?' dn':''}"><i style="width:${P.pct}%"></i></div><div><span>${P.open?(P.seen?'Lu jusqu’au chapitre '+maxSeen(it):'Pas commencé'):P.seen+' / '+P.total+' '+u+'s'}</span><span>${P.open?'':P.pct+' %'}</span></div></div>`:''}
  ${o?(w=>`<div class=nxt>${SI('cal',22)}<div><b>${o.lab} · ${w.a}${w.b?' ('+w.b+')':''}</b>${o.est?'Estimation d’après le jour de sortie choisi':'Prochaine sortie'}</div></div>`)(when(o)):''}
@@ -388,7 +402,8 @@ function detView(){const it=obj(VIEW);if(!it)return'';const inl=!!S.items[it.k],
  ${it.ty==='M'?`<div class=box><label>J’en suis au chapitre…</label><div class=inl><input id=upto type=number inputmode=numeric min=0 placeholder="ex. 132" value="${maxSeen(it)||''}"><button data-a=upto>OK</button></div></div>
   ${it.st!=='fin'&&it.st!=='stop'?`<div class=box><label>Jour de sortie habituel (pour estimer le prochain chapitre)</label><div class=days>${['L','M','M','J','V','S','D'].map((l,i)=>{const d=(i+1)%7;return`<button class="${it.day===d?'on':''}" data-a=day data-v=${d}>${l}</button>`}).join('')}</div></div>`:''}`:''}
  <h2>${it.ty==='M'?'Chapitres':it.src==='tm'&&G.length>1?'Saisons':'Épisodes'}</h2>
- ${D&&D.err?`<p class=err>${esc(D.err)}</p>`:''}${body||(D?`<div class=note>Aucun ${u} annoncé pour l’instant.</div>`:`<div class=empty>Chargement…</div>`)}`}
+ ${D&&D.err?`<p class=err>${esc(D.err)}</p>`:''}${body||(D?`<div class=note>Aucun ${u} annoncé pour l’instant.</div>`:`<div class=empty>Chargement…</div>`)}
+ ${D&&D.cast&&D.cast.length?`<h2>Acteurs</h2><div class="hs cast">${D.cast.map(c=>`<div class=ca><span class=ph2>${c.p?`<img src="${esc(c.p)}" alt="" loading=lazy>`:esc((c.n||'?').split(' ').map(w=>w[0]).slice(0,2).join(''))}</span><b>${esc(c.r||'—')}</b><small>${esc(c.n)}</small>${c.v?'<em>voix</em>':''}</div>`).join('')}</div>`:''}`}
 
 function overlay(){const f=F;if(!f)return'';
  if(f.k==='ask')return`<div class="sov pop" data-a=fno><div class=dpop><h3>${esc(f.lab)}</h3><p>${f.n>1?'Il y a '+f.n+' '+unit(obj(f.key))+'s précédents non cochés.':'Le précédent n’est pas coché.'} As-tu aussi vu ${f.n>1?'les précédents':'le précédent'} ?</p>
@@ -398,6 +413,7 @@ function overlay(){const f=F;if(!f)return'';
    M=(a,i,t,sub,cls)=>`<button class="mi ${cls||''}" data-a=${a}><i>${SI(i,24)}</i><span><b>${t}</b><small>${sub||''}</small></span></button>`;
   return`<div class=sov data-a=fno><div class="sheet cfg"><div class=grab></div><h2>${esc(it.t)}</h2>
   ${inl?'':M('madd','plus','Ajouter à ma liste','','gr')}
+  ${inl&&it.s==='plan'?'':M('mlater','mark','À voir plus tard','Range l’œuvre dans ta rangée « À voir plus tard ».')}
   ${ok&&P.left?M('mall','check','Tout marquer comme vu',pl(ok,u)+' '+(ok>1?'sortis':'sorti')):''}
   ${P.seen?M('mzero','undo','Remettre à zéro','Décoche tous les '+u+'s.'):''}
   ${M('ext','ext','Voir sur '+(it.src==='tm'?'TMDB':'AniList'),'Ouvre la page de l’œuvre.')}
@@ -435,7 +451,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
  if(a==='menu'){F={k:'menu',key:VIEW};return render()}
  if(a==='madd'){const x=ensure(VIEW);F=null;touch(x);return render()}
  if(a==='mall'){const x=ensure(VIEW),w=seenSet(x);eps(x).forEach(y=>y.ok&&w.add(y.id));F=null;return commit(x,w)}
- if(a==='mzero'){it.s='plan';F=null;return commit(it,new Set())}
+ if(a==='mzero'){F=null;return commit(it,new Set())}
+ if(a==='mlater'){const x=ensure(VIEW);x.s='plan';F=null;touch(x);return render()}
  if(a==='ext'){F=null;render();return window.open(it.src==='tm'?'https://www.themoviedb.org/tv/'+it.id:'https://anilist.co/'+(it.ty==='M'?'manga':'anime')+'/'+it.id,'_blank','noopener')}
  if(a==='rm'){F={k:'rm',key:VIEW};return render()}
  if(a==='rmok'){const k=F.key,x=S.items[k];delete S.items[k];S.del[k]=Date.now();BR[k]=Object.assign({},x,{w:[],s:undefined,day:undefined,cnt:undefined});S.dirty=1;persist();schedSync();F=null;return history.back()}

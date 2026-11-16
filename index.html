@@ -73,7 +73,15 @@ input:focus{border-color:var(--acc)}
 .ca b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px;line-height:1.25;font-weight:600}
 .ca small{display:block;font-size:11px;line-height:1.25;color:var(--mut);margin-top:2px}
 .ca em{display:inline-block;margin-top:4px;font-style:normal;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--tint);color:var(--act)}
-h2 small{font-weight:500;font-size:14px;color:var(--mut);margin-left:6px}
+h2 small,h1 small{font-weight:500;font-size:14px;color:var(--mut);margin-left:6px;letter-spacing:0}
+.h2r{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.h2r button{font-size:14px;font-weight:600;color:var(--act);padding:4px 0 4px 10px}
+.pc.lm b{height:auto}
+.grid:not(.mix) .pc.lm .tg{display:none}
+header.sh{justify-content:flex-start;gap:12px}
+/* Vignette d'épisode */
+.et{flex:none;width:86px;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:var(--line)}
+.et img{width:100%;height:100%;object-fit:cover;display:block}
 
 /* Lignes de l'accueil */
 .rw{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px;margin:8px 0}
@@ -204,7 +212,7 @@ function persist(){try{localStorage.setItem(K,JSON.stringify(S))}catch{}}
 function touch(it){it.u=Date.now();S.dirty=1;persist();schedSync()}
 
 /* État d'affichage */
-let TAB='home',VIEW=null,F=null,Q='',DT='A',FT='all',FS='all',RES=null,RERR='',BUSY=false,MSG='',SCR=0;
+let TAB='home',VIEW=null,F=null,Q='',DT='A',FT='all',FS='all',RES=null,RERR='',BUSY=false,MSG='',SUBV=null;const SCRS=[];
 const BR={},DET={},OPEN={};          // œuvres vues en recherche, détails chargés, groupes dépliés
 const obj=k=>S.items[k]||BR[k];
 
@@ -332,7 +340,7 @@ async function loadDet(k){const it=obj(k);if(!it)return;
  catch(e){DET[k]=DET[k]||{desc:'',ban:'',gen:[],sc:{},se:{},err:e.message==='NOKEY'?'Ajoute ta clé TMDB dans les réglages pour charger les épisodes.':e.message}}
  if(VIEW===k){initOpen(k);render();const g=[...(OPEN[k]||[])][0];if(it.src==='tm'&&g)loadSeason(k,g)}}
 async function loadSeason(k,n){const it=obj(k),D=DET[k];if(!it||!D||D.se[n])return;
- try{const d=await tm('tv/'+it.id+'/season/'+n);D.se[n]={};(d.episodes||[]).forEach(e=>D.se[n][e.episode_number]={n:e.name,d:e.air_date});if(VIEW===k&&!F)render()}catch{}}
+ try{const d=await tm('tv/'+it.id+'/season/'+n);D.se[n]={};(d.episodes||[]).forEach(e=>D.se[n][e.episode_number]={n:e.name,d:e.air_date,s:e.still_path});if(VIEW===k&&!F)render()}catch{}}
 /* Groupes : saisons (séries) ou tranches de 25 (longues œuvres) */
 function groups(it,L){
  if(it.src==='tm')return(it.ss||[]).map(([n,c,nm])=>({id:String(n),t:nm,L:L.filter(x=>x.s===n)}));
@@ -341,15 +349,16 @@ function groups(it,L){
 function initOpen(k){if(OPEN[k])return;const it=obj(k),P=prog(it),G=groups(it,P.L);if(!G.length)return;
  if(it.src==='tm'){OPEN[k]=new Set();return}                       // saisons repliées par défaut, on ouvre celle qu'on veut
  const g=G.find(g=>P.next&&g.L.includes(P.next))||(P.seen?G[G.length-1]:G[0]);OPEN[k]=new Set([g.id])}
-function openDet(k){SCR=scrollY;VIEW=k;initOpen(k);history.pushState({v:k},'');render();scrollTo(0,0);loadDet(k)}
-addEventListener('popstate',()=>{if(F){F=null}VIEW=null;render();scrollTo(0,SCR)});
+function openDet(k){SCRS.push(scrollY);VIEW=k;if((obj(k)||{}).src==='tm')delete OPEN[k];initOpen(k);history.pushState({v:k,sub:SUBV},'');render();scrollTo(0,0);loadDet(k)}
+function openSub(t){SCRS.push(scrollY);SUBV=t;history.pushState({sub:t},'');render();scrollTo(0,0)}
+addEventListener('popstate',e=>{const st=e.state||{};F=null;VIEW=st.v||null;SUBV=st.sub||null;render();scrollTo(0,SCRS.pop()||0)});
 
 /* ============ Vues ============ */
 const img=(it,cls)=>it.p?`<img src="${esc(it.p)}" alt="" loading=lazy>`:`<span class=ph>${esc(it.t)}</span>`;
 function card(it,mode){const inl=!!S.items[it.k];let ex='';
  if(mode==='list'){const P=prog(it);ex=`<div class="pb${P.pct>=100&&!P.open||it.s==='done'?' dn':''}"><i style="width:${it.s==='done'?100:P.pct}%"></i></div><b>${esc(it.t)}</b><small>${P.open?(it.w.length?'Ch. '+maxSeen(it):'Pas commencé'):P.seen+' / '+P.total}</small>`}
  else ex=`<b>${esc(it.t)}</b><small>${it.yr||''}</small>`;
- return`<button class=pc data-a=open data-k="${it.k}"><div class=im>${img(it)}<span class=tg>${esc(it.lb)}</span>${mode!=='list'&&inl?`<span class=in>${SI('check',14,3)}</span>`:''}</div>${ex}</button>`}
+ return`<button class="pc${mode==='list'?' lm':''}" data-a=open data-k="${it.k}"><div class=im>${img(it)}<span class=tg>${esc(it.lb)}</span>${mode!=='list'&&inl?`<span class=in>${SI('check',14,3)}</span>`:''}</div>${ex}</button>`}
 const chips=(L,cur,a)=>`<div class=chips>${L.map(([v,l])=>`<button class="chip${cur===v?' on':''}" data-a=${a} data-v=${v}>${l}</button>`).join('')}</div>`;
 const tabbar=()=>`<nav class=tabs>${[['disc','search','Discover'],['home','home','Home'],['list','list','My List']].map(([k,i,l])=>`<button class="${TAB===k?'on':''}" data-a=tab data-t=${k}><span>${SI(i,24)}</span>${l}</button>`).join('')}</nav>`;
 const gear=`<button class=ib data-a=cfg aria-label="Réglages">${SI('gear',21,1.7)}</button>`;
@@ -373,12 +382,17 @@ function homeView(){const all=Object.values(S.items);
  <h2>À continuer</h2>${cont.length?cont.map(({it,P})=>`<div class=rw><button class=th data-a=open data-k="${it.k}">${img(it)}</button><button class=tx data-a=open data-k="${it.k}"><b>${esc(it.t)}</b><span><em>${epLab(it,P.next)}</em>${P.open?'':P.left>1?' · encore '+P.left:' · dernier sorti'}</span></button><button class=ck data-a=tg data-k="${it.k}" data-id="${P.next.id}" aria-label="Marquer comme vu">${SI('check',20,3)}</button></div>`).join(''):`<div class=note>Tu es à jour partout. Les nouveaux épisodes apparaîtront ici dès leur sortie.</div>`}
  <h2>Prochaines sorties</h2>${up.length?up.map(({it,o})=>{const w=when(o);return`<button class=rw data-a=open data-k="${it.k}" style="width:100%"><span class=th>${img(it)}</span><span class=tx><b>${esc(it.t)}</b><span>${o.lab}</span></span><span class=dd><b>${w.a}</b><small>${w.b}</small></span></button>`}).join(''):`<div class=note>Aucune date annoncée pour l’instant. Pour un manga ou un webtoon, indique son jour de sortie habituel dans sa fiche.</div>`}`}
 
+/* Rangées de My List : « À voir plus tard » (tous types), puis une rangée par type */
+const SECS=[['plan','À voir plus tard'],['T','Mes séries'],['A','Mes animés'],['M','Mes mangas']];
+function secItems(t){const L=Object.values(S.items).filter(x=>FS==='all'||x.s===FS).sort((a,b)=>(b.u||b.a||0)-(a.u||a.a||0));
+ return t==='plan'?L.filter(x=>x.s==='plan'):L.filter(x=>x.ty===t&&x.s!=='plan')}
+function subView(){const X=secItems(SUBV),l=(SECS.find(x=>x[0]===SUBV)||[])[1]||'';
+ return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${l}<small>${X.length}</small></h1></header>
+ ${X.length?`<div class="grid${SUBV==='plan'?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`:`<div class=empty><b>Rien ici</b>Cette rangée est vide.</div>`}`}
 function listView(){const all=Object.values(S.items);
  const epi=all.filter(x=>x.ty!=='M').reduce((a,x)=>a+x.w.length,0),ch=all.filter(x=>x.ty==='M').reduce((a,x)=>a+x.w.length,0);
- const L=all.filter(x=>FS==='all'||x.s===FS).sort((a,b)=>(b.u||b.a||0)-(a.u||a.a||0));
- const row=(l,X,mix)=>X.length?`<h2>${l}<small>${X.length}</small></h2><div class="hs${mix?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`:'';
- const later=FS==='all'||FS==='plan'?row('À voir plus tard',L.filter(x=>x.s==='plan'),1):'';
- const sec=later+[['T','Mes séries'],['A','Mes animés'],['M','Mes mangas']].map(([t,l])=>{const X=L.filter(x=>x.ty===t&&x.s!=='plan');return X.length?`<h2>${l}<small>${X.length}</small></h2><div class=hs>${X.map(x=>card(x,'list')).join('')}</div>`:''}).join('');
+ const row=([t,l])=>{const X=secItems(t);return X.length?`<h2 class=h2r><span>${l}<small>${X.length}</small></span>${X.length>1?`<button data-a=all data-v=${t}>Tout voir</button>`:''}</h2><div class="hs${t==='plan'?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`:''};
+ const sec=SECS.map(row).join('');
  return`<header><h1>My List</h1>${gear}</header>
  <div class=stats><div><b>${all.length}</b><span>œuvres</span></div><div><b>${epi}</b><span>épisodes vus</span></div><div><b>${ch}</b><span>chapitres lus</span></div></div>
  ${chips([['all','Tous les statuts'],...UST],FS,'fs')}
@@ -387,7 +401,7 @@ function listView(){const all=Object.values(S.items);
 function detView(){const it=obj(VIEW);if(!it)return'';const inl=!!S.items[it.k],D=DET[it.k],P=prog(it),G=groups(it,P.L),O=OPEN[it.k]||new Set(),o=nextOut(it),u=unit(it);
  const row=x=>{const on=P.w.has(x.id),se=D&&it.src==='tm'&&D.se[x.s]&&D.se[x.s][x.e],at=se&&se.d?dloc(se.d):D&&D.sc[x.e];
   const sub=at?new Date(at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):(x.ok?'':'Pas encore sorti');
-  return`<div class="er${x.ok?'':' fu'}"><div class=tx><b>${it.src==='tm'?'E'+x.e+(se&&se.n?' · '+esc(se.n):''):epLab(it,x)}</b>${sub?`<small>${sub}</small>`:''}</div><button class="ck${on?' on':''}" data-a=tg data-k="${it.k}" data-id="${x.id}" ${x.ok||on?'':'disabled'} aria-label="${on?'Vu':'Marquer comme vu'}">${SI('check',20,3)}</button></div>`};
+  return`<div class="er${x.ok?'':' fu'}">${it.src==='tm'?`<span class=et>${se&&se.s?`<img src="${IMG}w185${esc(se.s)}" alt="" loading=lazy>`:''}</span>`:''}<div class=tx><b>${it.src==='tm'?'E'+x.e+(se&&se.n?' · '+esc(se.n):''):epLab(it,x)}</b>${sub?`<small>${sub}</small>`:''}</div><button class="ck${on?' on':''}" data-a=tg data-k="${it.k}" data-id="${x.id}" ${x.ok||on?'':'disabled'} aria-label="${on?'Vu':'Marquer comme vu'}">${SI('check',20,3)}</button></div>`};
  const more=P.open?`<button class=more data-a=more>+ Afficher 25 chapitres de plus</button>`:'';
  const body=G.map((g,i)=>{const s=g.L.filter(x=>P.w.has(x.id)).length,ok=g.L.filter(x=>x.ok).length,full=ok>0&&s>=ok,last=i===G.length-1;
   if(!g.t)return`<div class=gp>${g.L.map(row).join('').replace('class="er','style="border-top:0" class="er')}${more}</div>`;
@@ -429,7 +443,7 @@ function overlay(){const f=F;if(!f)return'';
  return''}
 
 function render(){const a=$('#app');
- a.innerHTML=(VIEW?detView():(TAB==='disc'?discView():TAB==='list'?listView():homeView())+tabbar())+overlay();
+ a.innerHTML=(VIEW?detView():SUBV?subView():(TAB==='disc'?discView():TAB==='list'?listView():homeView())+tabbar())+overlay();
  document.body.style.overflow=F?'hidden':''}
 
 /* ============ Actions ============ */
@@ -437,6 +451,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
  if(a==='fno'){if(e.target!==b)return;return closeF()}
  if(a==='tab'){TAB=d.t;render();scrollTo(0,0);if(TAB==='disc'&&!RES)search();return}
  if(a==='open')return openDet(d.k);
+ if(a==='all')return openSub(d.v);
  if(a==='back')return history.back();
  if(a==='cfg'){F={k:'cfg'};return render()}
  if(a==='dt'){DT=d.v;RES=null;render();return search()}

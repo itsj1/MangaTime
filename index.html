@@ -25,8 +25,8 @@ input:focus{border-color:var(--acc)}
 .ib{width:40px;height:40px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:grid;place-items:center}
 
 /* Barre d'onglets (même pilule flottante que Muscu) */
-.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(330px,calc(100% - 40px));display:flex;background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:999px;padding:6px;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:5}
-.tabs button{flex:1;border-radius:999px;display:flex;flex-direction:column;align-items:center;font-size:12px;padding:6px;color:var(--mut)}
+.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(400px,calc(100% - 24px));display:flex;background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:999px;padding:6px;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:5}
+.tabs button{flex:1;min-width:0;border-radius:999px;display:flex;flex-direction:column;align-items:center;font-size:11.5px;padding:6px 2px;color:var(--mut)}
 .tabs button.on{background:var(--tint);color:var(--act);font-weight:700}
 .tabs span{display:block;height:24px;margin-bottom:2px}
 
@@ -96,7 +96,8 @@ header.sh{justify-content:flex-start;gap:12px}
 .dd small{color:var(--mut)}
 
 /* Home « Suivant » : liste ou grille */
-.hvr{display:flex;justify-content:flex-end;margin:-4px 0 2px}
+.hbt{display:flex;align-items:center;gap:6px}
+.h2r>small{font-weight:500;font-size:13px;color:var(--mut);margin:0}
 .hv{width:40px;height:40px;display:grid;place-items:center;color:var(--ink)}
 .nr{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .nr .th{flex:none;width:84px;aspect-ratio:2/3;border-radius:8px;overflow:hidden;background:var(--card);border:1px solid var(--line)}
@@ -401,7 +402,7 @@ function card(it,mode){const inl=!!S.items[it.k];let ex='';
  else ex=`<b>${esc(it.t)}</b><small>${it.yr||''}</small>`;
  return`<button class="pc${mode==='list'?' lm':''}" data-a=open data-k="${it.k}"><div class=im>${img(it)}<span class=tg>${esc(it.lb)}</span>${mode!=='list'&&inl?`<span class=in>${SI('check',14,3)}</span>`:''}</div>${ex}</button>`}
 const chips=(L,cur,a)=>`<div class=chips>${L.map(([v,l])=>`<button class="chip${cur===v?' on':''}" data-a=${a} data-v=${v}>${l}</button>`).join('')}</div>`;
-const tabbar=()=>`<nav class=tabs>${[['disc','search','Discover'],['home','home','Home'],['list','list','My List']].map(([k,i,l])=>`<button class="${TAB===k?'on':''}" data-a=tab data-t=${k}><span>${SI(i,24)}</span>${l}</button>`).join('')}</nav>`;
+const tabbar=()=>`<nav class=tabs>${[['disc','search','Discover'],['home','home','Home'],['list','list','My List'],['cal','cal','Calendrier']].map(([k,i,l])=>`<button class="${TAB===k?'on':''}" data-a=tab data-t=${k}><span>${SI(i,24)}</span>${l}</button>`).join('')}</nav>`;
 const gear=`<button class=ib data-a=cfg aria-label="Réglages">${SI('gear',21,1.7)}</button>`;
 
 function resHTML(){
@@ -425,20 +426,28 @@ function nextHTML(X){
  return X.map(({it,P})=>`<div class=nr><button class=th data-a=open data-k="${it.k}">${img(it)}</button><button class=tx data-a=open data-k="${it.k}"><b>${esc(it.t)}</b><span class=nl>${nxLab(it,P)}</span><em>${P.open?'Ch. '+maxSeen(it)+' lu':P.seen+'/'+P.total}</em><span class=pb><i style="width:${P.pct}%"></i></span></button><button class=ck data-a=tg data-k="${it.k}" data-id="${P.next.id}" aria-label="Marquer comme vu">${SI('check',20,3)}</button></div>`).join('')}
 const hvBtn=()=>`<button class=hv data-a=hv aria-label="Changer d’affichage">${SI(S.hv==='g'?'rows':'tiles',24)}</button>`;
 const mini=(l,X)=>X.length?`<h2>${l}<small>${X.length}</small></h2><div class="hs mix">${X.map(({it})=>card(it,'list')).join('')}</div>`:'';
-function homeView(){const all=Object.values(S.items),H=homeSets(),MAX=8;
- const up=all.filter(it=>it.s==='cur'||it.s==='plan').map(it=>({it,o:nextOut(it)})).filter(x=>x.o).sort((a,b)=>a.o.at-b.o.at);
+const HSEC=[['T','Séries'],['A','Animés'],['M','Mangas']];
+function homeView(){const all=Object.values(S.items),H=homeSets(),MAX=5;
  if(!all.length)return`<header><h1>Home</h1>${gear}</header><div class=empty><b>Ta liste est vide</b>Cherche un manga, un animé ou une série dans Discover pour commencer à suivre ta progression.</div><button class=big data-a=tab data-t=disc>Découvrir des œuvres</button>`;
- return`<header><h1>Home</h1>${gear}</header>
- <h2 class=h2r><span>Suivant</span>${H.next.length>MAX?`<button data-a=all data-v=next>Tout voir (${H.next.length})</button>`:''}</h2>
- ${H.next.length?`<div class=hvr>${hvBtn()}</div>`+nextHTML(H.next.slice(0,MAX)):`<div class=note>${H.fresh.length||H.stale.length?'Rien en cours pour le moment.':'Tu es à jour partout. Les nouveaux épisodes apparaîtront ici dès leur sortie.'}</div>`}
- <h2>Prochaines sorties</h2>${up.length?up.map(({it,o})=>{const w=when(o);return`<button class=rw data-a=open data-k="${it.k}" style="width:100%"><span class=th>${img(it)}</span><span class=tx><b>${esc(it.t)}</b><span>${o.lab}</span></span><span class=dd><b>${w.a}</b><small>${w.b}</small></span></button>`}).join(''):`<div class=note>Aucune date de sortie annoncée pour l’instant.</div>`}
+ const sec=HSEC.map(([t,l])=>{const X=H.next.filter(x=>x.it.ty===t);return X.length?`<h2 class=h2r><span>${l}<small>${X.length}</small></span>${X.length>MAX?`<button data-a=all data-v="next:${t}">Tout voir (${X.length})</button>`:''}</h2>${nextHTML(X.slice(0,MAX))}`:''}).join('');
+ return`<header><h1>Home</h1><span class=hbt>${H.next.length?hvBtn():''}${gear}</span></header>
+ ${sec||`<div class=note>${H.fresh.length||H.stale.length?'Rien en cours pour le moment.':'Tu es à jour partout. Les nouveaux épisodes apparaîtront ici dès leur sortie ; les dates sont dans l’onglet Calendrier.'}</div>`}
  ${mini('Pas commencées',H.fresh)}${mini('Pas regardées depuis un moment',H.stale)}`}
+
+/* Calendrier : prochaines sorties des séries et animés suivis, jour par jour */
+function calView(){const up=Object.values(S.items).filter(it=>it.s==='cur'||it.s==='plan').map(it=>({it,o:nextOut(it)})).filter(x=>x.o).sort((a,b)=>a.o.at-b.o.at);
+ let out='',cur=null;
+ for(const{it,o}of up){const D=new Date(o.at),d0=new Date(D.getFullYear(),D.getMonth(),D.getDate()).getTime(),dd=Math.round((d0-today0())/DAY);
+  if(d0!==cur){cur=d0;const full=D.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}).replace(/^./,c=>c.toUpperCase());
+   out+=`<h2 class=h2r><span>${dd<=0?'Aujourd’hui':dd===1?'Demain':full}</span><small>${dd<=1?full:'dans '+dd+' j'}</small></h2>`}
+  out+=`<button class=rw data-a=open data-k="${it.k}" style="width:100%"><span class=th>${img(it)}</span><span class=tx><b>${esc(it.t)}</b><span>${o.lab} · ${esc(it.lb)}</span></span>${o.d?'':`<span class=dd><b>${D.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</b></span>`}</button>`}
+ return`<header><h1>Calendrier</h1>${gear}</header>${out||`<div class=empty><b>Aucune sortie annoncée</b>Les prochains épisodes de tes séries et animés en cours apparaîtront ici, jour par jour.</div>`}`}
 
 /* Rangées de My List : « À voir plus tard » (tous types), puis une rangée par type */
 const SECS=[['plan','À voir plus tard'],['T','Mes séries'],['A','Mes animés'],['M','Mes mangas']];
 function secItems(t){const L=Object.values(S.items).filter(x=>FS==='all'||x.s===FS).sort((a,b)=>(b.u||b.a||0)-(a.u||a.a||0));
  return t==='plan'?L.filter(x=>x.s==='plan'):L.filter(x=>x.ty===t&&x.s!=='plan')}
-function subView(){if(SUBV==='next'){const X=homeSets().next;return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>Suivant<small>${X.length}</small></h1></header><div class=hvr>${hvBtn()}</div>${nextHTML(X)}`}
+function subView(){if(SUBV.startsWith('next:')){const t=SUBV.slice(5),X=homeSets().next.filter(x=>x.it.ty===t);return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${(HSEC.find(x=>x[0]===t)||[])[1]||''}<small>${X.length}</small></h1><span class=hbt style="margin-left:auto">${hvBtn()}</span></header>${nextHTML(X)}`}
  const X=secItems(SUBV),l=(SECS.find(x=>x[0]===SUBV)||[])[1]||'';
  return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${l}<small>${X.length}</small></h1></header>
  ${X.length?`<div class="grid${SUBV==='plan'?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`:`<div class=empty><b>Rien ici</b>Cette rangée est vide.</div>`}`}
@@ -497,7 +506,7 @@ function overlay(){const f=F;if(!f)return'';
  return''}
 
 function render(){const a=$('#app');
- a.innerHTML=(VIEW?detView():SUBV?subView():(TAB==='disc'?discView():TAB==='list'?listView():homeView())+tabbar())+overlay();
+ a.innerHTML=(VIEW?detView():SUBV?subView():(TAB==='disc'?discView():TAB==='list'?listView():TAB==='cal'?calView():homeView())+tabbar())+overlay();
  document.body.style.overflow=F?'hidden':'';
  /* le bouton ⋯ n'apparaît que si le titre de l'épisode est coupé */
  if(VIEW)a.querySelectorAll('.er').forEach(r=>{const m=r.querySelector('.em'),b=r.querySelector('.tx b');if(m)m.hidden=b.scrollHeight<=b.clientHeight+1})}
@@ -505,7 +514,7 @@ function render(){const a=$('#app');
 /* ============ Actions ============ */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,d=b.dataset;
  if(a==='fno'){if(e.target!==b)return;return closeF()}
- if(a==='tab'){TAB=d.t;render();scrollTo(0,0);if(TAB==='disc'&&!RES)search();return}
+ if(a==='tab'){TAB=d.t;render();scrollTo(0,0);if(TAB==='disc'&&!RES)search();if(TAB==='cal')refreshAll();return}
  if(a==='open')return openDet(d.k);
  if(a==='all')return openSub(d.v);
  if(a==='back')return history.back();

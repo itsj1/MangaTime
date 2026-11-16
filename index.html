@@ -168,6 +168,11 @@ header.sh{justify-content:flex-start;gap:12px}
 .em[hidden]{display:none}
 .er .tx small{color:var(--mut);font-size:12px}
 .er.fu .tx{opacity:.55}
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;padding:12px;border-top:1px solid var(--line)}
+.gp>.cg:first-child{border-top:0}
+.cn{aspect-ratio:1;border-radius:50%;border:2px solid var(--line);font-size:14px;font-weight:600;display:grid;place-items:center}
+.cn.on{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:700}
+.cn:active{transform:scale(.9)}
 .more{display:block;width:100%;padding:12px;border-top:1px solid var(--line);color:var(--act);font-weight:700;font-size:14px}
 .rm{display:block;margin:22px auto 0;color:var(--red);font-size:14px;padding:10px}
 
@@ -261,7 +266,8 @@ const fromTM=r=>({k:'tm:'+r.id,src:'tm',id:r.id,ty:isAni(r)?'A':'T',t:r.name||r.
 const dloc=d=>{const[y,m,j]=d.split('-').map(Number);return new Date(y,m-1,j).getTime()};
 function applyTM(it,d){
  it.t=d.name||it.t;if(d.genres&&d.original_language){const an=isAni(d);it.ty=an?'A':'T';it.lb=an?'Animé':'Série';it.g=d.genres.filter(g=>g.id!==16||!an).slice(0,3).map(g=>g.name)}if(d.poster_path)it.p=IMG+'w342'+d.poster_path;
- it.ss=(d.seasons||[]).filter(s=>s.season_number>0&&s.episode_count>0).map(s=>[s.season_number,s.episode_count,s.name||'Saison '+s.season_number]);
+ const old={};(it.ss||[]).forEach(x=>old[x[0]]=x);   // on garde le n° du 1er épisode déjà connu pour chaque saison
+ it.ss=(d.seasons||[]).filter(s=>s.season_number>0&&s.episode_count>0).map(s=>{const o=old[s.season_number];return[s.season_number,s.episode_count,s.name||'Saison '+s.season_number,o?o[3]||1:1,o?o[4]||0:0]});
  it.tot=it.ss.reduce((a,s)=>a+s[1],0);
  const l=d.last_episode_to_air,n=d.next_episode_to_air;
  it.la=l?[l.season_number,l.episode_number]:null;
@@ -276,11 +282,11 @@ const maxSeen=it=>it.src==='tm'?0:(it.w||[]).reduce((a,b)=>Math.max(a,b),0);
 /* Liste complète : {id,s?,e,ok} — ok = déjà sorti, donc cochable */
 function eps(it){const out=[];
  if(it.src==='tm'){const la=it.la,fin=it.st==='fin'||it.st==='stop';
-  (it.ss||[]).forEach(([n,c])=>{for(let e=1;e<=c;e++)out.push({id:n+'-'+e,s:n,e,ok:la?(n<la[0]||(n===la[0]&&e<=la[1])):fin})});return out}
+  (it.ss||[]).forEach(([n,c,,f])=>{f=f||1;for(let e=f;e<f+c;e++)out.push({id:n+'-'+e,s:n,e,ok:la?(n<la[0]||(n===la[0]&&e<=la[1])):fin})});return out}
  const mx=maxSeen(it);let n,av;
  if(it.ty==='A'){av=it.st==='soon'?0:it.nx?it.nx.e-1:it.tot;n=it.tot||Math.max(av,mx,it.nx?it.nx.e:0);
   if(!n&&it.st!=='soon')n=av=Math.max(mx+1,it.cnt||12);av=Math.max(av,mx)}
- else{n=it.tot||Math.max(mx+1,it.cnt||25);av=n}
+ else{n=it.tot||Math.max(mx+1,it.cnt||25,(it.sp||[]).reduce((a,b)=>a+b,0));av=n}
  for(let e=1;e<=n;e++)out.push({id:e,e,ok:e<=av});return out}
 const unit=it=>it.ty==='M'?'chapitre':'épisode';
 const epLab=(it,x)=>it.src==='tm'?'S'+x.s+' · E'+x.e:(it.ty==='M'?'Chapitre ':'Épisode ')+x.e;
@@ -357,12 +363,30 @@ async function loadDet(k){const it=obj(k);if(!it)return;
    DET[k]={cast,desc:d.overview||'',ban:d.backdrop_path?IMG+'w780'+d.backdrop_path:'',gen:(d.genres||[]).map(g=>g.name),sc:{},se:{}}}
   it.nf=Date.now();if(S.items[k])persist()}
  catch(e){DET[k]=DET[k]||{desc:'',ban:'',gen:[],sc:{},se:{},err:e.message==='NOKEY'?'Ajoute ta clé TMDB dans les réglages pour charger les épisodes.':e.message}}
- if(VIEW===k){initOpen(k);render();const g=[...(OPEN[k]||[])][0];if(it.src==='tm'&&g)loadSeason(k,g)}}
+ if(VIEW===k){initOpen(k);render()}
+ if(it.src==='tm'&&DET[k]&&!DET[k].err)loadSeasons(k)}
+/* Certaines œuvres (Hunter x Hunter…) numérotent leurs épisodes en continu d'une saison à l'autre :
+   la saison 2 commence à l'épisode 27, pas 1. On cale donc chaque saison sur ses vrais numéros,
+   et on décale la progression déjà cochée si la numérotation connue change. */
+function setSeason(it,D,n,epi){epi=(epi||[]).filter(e=>e.episode_number>0).sort((a,b)=>a.episode_number-b.episode_number);if(!epi.length)return;
+ D.se[n]={};epi.forEach(e=>D.se[n][e.episode_number]={n:e.name,d:e.air_date,s:e.still_path,o:e.overview});
+ const x=(it.ss||[]).find(x=>x[0]===n);if(!x)return;
+ const f=epi[0].episode_number,c=epi[epi.length-1].episode_number-f+1,f0=x[3]||1;
+ if(f!==f0&&it.w&&it.w.length){it.w=it.w.map(id=>{const[a,b]=String(id).split('-');return +a===n?n+'-'+(+b-f0+f):id});if(S.items[it.k])touch(it)}
+ x[1]=c;x[3]=f;x[4]=1;it.tot=it.ss.reduce((a,s)=>a+s[1],0)}
+async function loadSeasons(k){const it=obj(k),D=DET[k];if(!it||!D)return;const N=(it.ss||[]).map(x=>x[0]).filter(n=>!D.se[n]);
+ for(let i=0;i<N.length;i+=20){const part=N.slice(i,i+20);
+  try{const d=await tm('tv/'+it.id,{append_to_response:part.map(n=>'season/'+n).join(',')});part.forEach(n=>setSeason(it,D,n,(d['season/'+n]||{}).episodes))}catch{}}
+ if(S.items[k])persist();if(VIEW===k&&!F)render()}
 async function loadSeason(k,n){const it=obj(k),D=DET[k];if(!it||!D||D.se[n])return;
- try{const d=await tm('tv/'+it.id+'/season/'+n);D.se[n]={};(d.episodes||[]).forEach(e=>D.se[n][e.episode_number]={n:e.name,d:e.air_date,s:e.still_path,o:e.overview});if(VIEW===k&&!F)render()}catch{}}
+ try{const d=await tm('tv/'+it.id+'/season/'+n);setSeason(it,D,n,d.episodes);if(S.items[k])persist();if(VIEW===k&&!F)render()}catch{}}
 /* Groupes : saisons (séries) ou tranches de 25 (longues œuvres) */
 function groups(it,L){
  if(it.src==='tm')return(it.ss||[]).map(([n,c,nm])=>({id:String(n),t:nm,L:L.filter(x=>x.s===n)}));
+ if(it.ty==='M'){                                    // mangas : saisons définies par toi, sinon tranches de 100
+  if(it.sp&&it.sp.length){const G=[];let i=0,k=0;while(i<L.length){const c=L.slice(i,i+(it.sp[k]||L.length));G.push({id:'s'+k,t:'Saison '+(k+1)+' · ch. '+c[0].e+' – '+c[c.length-1].e,L:c});i+=c.length;k++}return G}
+  if(L.length<=150)return[{id:'0',t:'',L}];
+  const G=[];for(let i=0;i<L.length;i+=100){const c=L.slice(i,i+100);G.push({id:String(i),t:'Chapitres '+c[0].e+' – '+c[c.length-1].e,L:c})}return G}
  if(L.length<=30)return[{id:'0',t:'',L}];
  const G=[];for(let i=0;i<L.length;i+=25){const c=L.slice(i,i+25);G.push({id:String(i),t:(it.ty==='M'?'Chapitres ':'Épisodes ')+c[0].e+' – '+c[c.length-1].e,L:c})}return G}
 function initOpen(k){if(OPEN[k])return;const it=obj(k),P=prog(it),G=groups(it,P.L);if(!G.length)return;
@@ -433,10 +457,11 @@ function detView(){const it=obj(VIEW);if(!it)return'';const inl=!!S.items[it.k],
  const row=x=>{const on=P.w.has(x.id),se=D&&it.src==='tm'&&D.se[x.s]&&D.se[x.s][x.e],at=se&&se.d?dloc(se.d):D&&D.sc[x.e];
   const sub=at?new Date(at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):(x.ok?'':'Pas encore sorti');
   return`<div class="er${x.ok?'':' fu'}">${it.src==='tm'?`<span class=et>${se&&se.s?`<img src="${IMG}w185${esc(se.s)}" alt="" loading=lazy>`:''}</span>`:''}<div class=tx><b>${it.src==='tm'?'E'+x.e+(se&&se.n?' · '+esc(se.n):''):epLab(it,x)}</b>${sub?`<small>${sub}</small>`:''}</div>${se&&se.n?`<button class=em data-a=epi data-s=${x.s} data-e=${x.e} hidden aria-label="Voir le titre complet">${SI('dots',18,2.6)}</button>`:''}<button class="ck${on?' on':''}" data-a=tg data-k="${it.k}" data-id="${x.id}" ${x.ok||on?'':'disabled'} aria-label="${on?'Vu':'Marquer comme vu'}">${SI('check',20,3)}</button></div>`};
+ const tiles=g=>`<div class=cg>${g.L.map(x=>`<button class="cn${P.w.has(x.id)?' on':''}" data-a=tg data-k="${it.k}" data-id="${x.id}">${x.e}</button>`).join('')}</div>`,rows=g=>it.ty==='M'?tiles(g):g.L.map(row).join('');
  const more=P.open?`<button class=more data-a=more>+ Afficher 25 chapitres de plus</button>`:'';
  const body=G.map((g,i)=>{const s=g.L.filter(x=>P.w.has(x.id)).length,ok=g.L.filter(x=>x.ok).length,full=ok>0&&s>=ok,last=i===G.length-1;
-  if(!g.t)return`<div class=gp>${g.L.map(row).join('').replace('class="er','style="border-top:0" class="er')}${more}</div>`;
-  const op=O.has(g.id);return`<div class="gp${op?' op':''}"><div class=gh><button class=gt data-a=grp data-g="${g.id}">${SI('chev',16)}<b>${esc(g.t)}</b><small>${s} / ${g.L.length}</small></button><button class="ck${full?' on':''}" data-a=gall data-g="${g.id}" ${ok?'':'disabled'} aria-label="Tout marquer">${SI('check',20,3)}</button></div>${op?g.L.map(row).join('')+(last?more:''):''}</div>`}).join('');
+  if(!g.t)return`<div class=gp>${rows(g).replace('class="er','style="border-top:0" class="er')}${more}</div>`;
+  const op=O.has(g.id);return`<div class="gp${op?' op':''}"><div class=gh><button class=gt data-a=grp data-g="${g.id}">${SI('chev',16)}<b>${esc(g.t)}</b><small>${s} / ${g.L.length}</small></button><button class="ck${full?' on':''}" data-a=gall data-g="${g.id}" ${ok?'':'disabled'} aria-label="Tout marquer">${SI('check',20,3)}</button></div>${op?rows(g)+(last?more:''):''}</div>`}).join('');
  return`<button class=bk data-a=back aria-label="Retour">${SI('back',22)}</button><button class="bk mo" data-a=menu aria-label="Plus d’actions">${SI('dots',22,2.6)}</button>
  <div class=hero style="${D&&D.ban?`background-image:url('${esc(D.ban)}')`:''}"></div>
  <div class=hd><div class=po>${img(it)}</div><div><h1>${esc(it.t)}</h1><div class=mut>${[it.lb,it.yr||'',STL[it.st]||''].filter(Boolean).join(' · ')}</div>${it.g&&it.g.length?`<div class=gen>${it.g.map(esc).join(' · ')}</div>`:''}</div></div>
@@ -445,6 +470,7 @@ function detView(){const it=obj(VIEW);if(!it)return'';const inl=!!S.items[it.k],
  ${o?(w=>`<div class=nxt>${SI('cal',22)}<div><b>${o.lab} · ${w.a}${w.b?' ('+w.b+')':''}</b>${o.est?'Estimation d’après le jour de sortie choisi':'Prochaine sortie'}</div></div>`)(when(o)):''}
  ${D&&D.desc?`<p class=desc data-a=desc>${esc(D.desc)}</p>`:''}
  ${it.ty==='M'?`<div class=box><label>J’en suis au chapitre…</label><div class=inl><input id=upto type=number inputmode=numeric min=0 placeholder="ex. 132" value="${maxSeen(it)||''}"><button data-a=upto>OK</button></div></div>
+  <div class=box><label>Découpage en saisons (facultatif) : nombre de chapitres de chaque saison</label><div class=inl><input id=split inputmode=numeric placeholder="ex. 90, 168" value="${(it.sp||[]).join(', ')}"><button data-a=split>OK</button></div></div>
   ${it.st!=='fin'&&it.st!=='stop'?`<div class=box><label>Jour de sortie habituel (pour estimer le prochain chapitre)</label><div class=days>${['L','M','M','J','V','S','D'].map((l,i)=>{const d=(i+1)%7;return`<button class="${it.day===d?'on':''}" data-a=day data-v=${d}>${l}</button>`}).join('')}</div></div>`:''}`:''}
  <h2>${it.ty==='M'?'Chapitres':it.src==='tm'&&G.length>1?'Saisons':'Épisodes'}</h2>
  ${D&&D.err?`<p class=err>${esc(D.err)}</p>`:''}${body||(D?`<div class=note>Aucun ${u} annoncé pour l’instant.</div>`:`<div class=empty>Chargement…</div>`)}
@@ -513,6 +539,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
  if(a==='more'){it.cnt=eps(it).length+25;if(S.items[VIEW])touch(it);return render()}
  if(a==='upto'){const n=Math.max(0,Math.floor(+$('#upto').value||0)),x=ensure(VIEW);if(x.tot&&n>x.tot)return alertMsg('Cette œuvre compte '+x.tot+' chapitres.');
   if(!x.tot)x.cnt=Math.max(x.cnt||0,n+1);const w=new Set();for(let i=1;i<=n;i++)w.add(i);delete OPEN[VIEW];x.w=[...w];commit(x,w);initOpen(VIEW);return render()}
+ if(a==='split'){const x=ensure(VIEW),v=($('#split').value.match(/\d+/g)||[]).map(Number).filter(n=>n>0&&n<5000).slice(0,30);x.sp=v.length?v:undefined;delete OPEN[VIEW];touch(x);initOpen(VIEW);return render()}
  if(a==='day'){const x=ensure(VIEW),v=+d.v;x.day=x.day===v?null:v;touch(x);return render()}
  if(a==='sync'){setMsg('Synchronisation…');return sync(true)}
  if(a==='exp'){const u=URL.createObjectURL(new Blob([JSON.stringify({items:S.items,del:S.del},null,1)],{type:'application/json'})),l=document.createElement('a');l.href=u;l.download='mangatime-'+new Date().toISOString().slice(0,10)+'.json';l.click();return setTimeout(()=>URL.revokeObjectURL(u),2e3)}

@@ -104,7 +104,7 @@ header.sh{justify-content:flex-start;gap:12px}
 .nr .th img{width:100%;height:100%;object-fit:cover;display:block}
 .nr .tx{flex:1;min-width:0;text-align:left}
 .nr .tx b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:17px;line-height:1.2;font-weight:700}
-.nl{display:block;margin-top:5px;font-size:14px;color:var(--mut)}
+.nl{display:block;margin-top:5px;font-size:14px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nl strong{color:var(--ink);font-size:16px;font-weight:800}
 .ob.dn i{background:var(--ok)}
 .nr .tx em{display:block;font-style:normal;font-size:13px;font-weight:700;color:var(--act);margin:8px 0 4px}
@@ -150,6 +150,8 @@ header.sh{justify-content:flex-start;gap:12px}
 .desc.op{display:block}
 .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin:12px 0}
 .box label{display:block;font-size:13px;color:var(--mut);margin-bottom:8px}
+.box .rel{font-size:14px;color:var(--act);margin:10px 0 12px}
+.box .rel:last-child{margin-bottom:0}
 .inl{display:flex;gap:8px}
 .inl input{flex:1;min-width:0}
 .inl button{flex:none;padding:0 18px;border-radius:14px;background:var(--acc);color:var(--on);font-weight:700}
@@ -288,13 +290,21 @@ function eps(it){const out=[];
  const mx=maxSeen(it);let n,av;
  if(it.ty==='A'){av=it.st==='soon'?0:it.nx?it.nx.e-1:it.tot;n=it.tot||Math.max(av,mx,it.nx?it.nx.e:0);
   if(!n&&it.st!=='soon')n=av=Math.max(mx+1,it.cnt||12);av=Math.max(av,mx)}
- else{n=it.tot||Math.max(mx+1,it.cnt||25);av=n}
+ else{const R=released(it);n=it.tot||(R?Math.max(R,mx):Math.max(mx+1,it.cnt||25));av=n}
  for(let e=1;e<=n;e++)out.push({id:e,e,ok:e<=av});return out}
+/* Chapitres sortis d'un manga : total officiel s'il est terminé, sinon ta correction manuelle ou l'estimation */
+const released=it=>it.tot||it.relm||it.rel||0;
+/* AniList ne donne pas le dernier chapitre d'un manga en cours. On l'estime avec les dernières
+   activités « a lu le chapitre N » de ses lecteurs : on prend le 2e plus haut pour écarter une saisie isolée. */
+async function estRel(it){
+ try{const d=await al('query($id:Int){Page(perPage:50){activities(mediaId:$id,type:MANGA_LIST,sort:ID_DESC){... on ListActivity{progress status}}}}',{id:it.id});
+  const v=(d.Page.activities||[]).filter(a=>a&&a.progress&&/chapter/i.test(a.status||'')).map(a=>Math.max(...(String(a.progress).match(/\d+/g)||[0]).map(Number))).filter(n=>n>0&&n<20000).sort((a,b)=>b-a);
+  if(v.length)it.rel=v.length>1?v[1]:v[0];it.rf=Date.now()}catch{}}
 const unit=it=>it.ty==='M'?'chapitre':'épisode';
 const epLab=(it,x)=>it.src==='tm'?'S'+x.s+' · E'+x.e:(it.ty==='M'?'Chapitre ':'Épisode ')+x.e;
 function prog(it){const L=eps(it),w=seenSet(it);let seen=0,left=0,next=null;
  for(const x of L){if(w.has(x.id))seen++;else if(x.ok){left++;if(!next)next=x}}
- const open=it.ty==='M'&&!it.tot;                       // manga en cours : total inconnu
+ const open=it.ty==='M'&&!released(it);                // manga en cours dont on ignore le nombre de chapitres sortis
  const total=open?Math.max(maxSeen(it),1):L.length;
  return{L,w,seen,left,next,total,open,pct:total?Math.min(100,Math.round(seen/total*100)):0}}
 const parseId=(it,v)=>it.src==='tm'?v:+v;
@@ -332,7 +342,8 @@ async function refreshAll(force){
  const L=Object.values(S.items).filter(it=>['cur','plan','pause'].includes(it.s)&&(force||Date.now()-(it.nf||0)>6*3600e3));if(!L.length)return;
  const A=L.filter(x=>x.src==='al');
  try{for(let i=0;i<A.length;i+=50){const d=await al(`query($ids:[Int]){Page(perPage:50){media(id_in:$ids){${ALF}}}}`,{ids:A.slice(i,i+50).map(x=>x.id)});
-  d.Page.media.forEach(m=>{const it=S.items['al:'+m.id];if(it){meta(it,fromAL(m));it.nf=Date.now()}})}}catch{}
+  d.Page.media.forEach(m=>{const it=S.items['al:'+m.id];if(it){meta(it,fromAL(m));it.nf=Date.now()}})}
+  for(const it of A.filter(x=>x.ty==='M'&&!x.tot&&x.s==='cur').slice(0,8))await estRel(it)}catch{}
  if(S.cfg.tmdb)for(const it of L.filter(x=>x.src==='tm')){try{applyTM(it,await tm('tv/'+it.id));it.nf=Date.now()}catch{}}
  persist();if(!F)render()}
 
@@ -356,7 +367,7 @@ async function search(){const seq=++SEQ;BUSY=true;RERR='';paintRes();
 async function loadDet(k){const it=obj(k);if(!it)return;
  try{if(it.src==='al'){
    const d=await al(`query($id:Int){Media(id:$id){${ALF} description(asHtml:false) bannerImage genres airingSchedule(notYetAired:true,perPage:25){nodes{episode airingAt}}}}`,{id:it.id}),m=d.Media;
-   meta(it,fromAL(m));const sc={};((m.airingSchedule||{}).nodes||[]).forEach(n=>sc[n.episode]=n.airingAt*1000);
+   meta(it,fromAL(m));if(it.ty==='M'&&!it.tot&&it.st!=='soon')estRel(it).then(()=>{if(S.items[k])persist();if(VIEW===k&&!F&&!(document.activeElement||{}).matches?.('input'))render()});const sc={};((m.airingSchedule||{}).nodes||[]).forEach(n=>sc[n.episode]=n.airingAt*1000);
    DET[k]={desc:(m.description||'').replace(/<br\s*\/?>/gi,' ').replace(/<[^>]+>/g,''),ban:m.bannerImage||'',gen:m.genres||[],sc,se:{}}}
   else{const d=await tm('tv/'+it.id,{append_to_response:'aggregate_credits'});applyTM(it,d);
    const cast=((d.aggregate_credits||{}).cast||[]).slice(0,20).map(c=>{const r=((c.roles||[])[0]||{}).character||'';return{n:c.name,p:c.profile_path?IMG+'w185'+c.profile_path:'',r:r.replace(/\s*\(voice\)/ig,'').trim(),v:it.ty==='A'||/\(voice\)/i.test(r)}});
@@ -426,10 +437,12 @@ function homeSets(){const X=Object.values(S.items).filter(it=>it.s==='cur').map(
 const shortEp=(it,x)=>it.src==='tm'?'S'+x.s+'E'+x.e:(it.ty==='M'?'Ch. ':'Ép. ')+x.e;
 /* À jour : on annonce le prochain épisode et son jour s'il est connu, sinon le dernier vu ; la barre passe au vert */
 const nxLab=(it,P)=>{if(!P.next){const o=nextOut(it),l=[...P.L].reverse().find(x=>P.w.has(x.id));
-  return o?`<strong>${o.lab.replace(' · ','').replace('Épisode ','Ép. ')}</strong><span> · ${when(o).a.toLowerCase()}</span>`:`<strong>${l?shortEp(it,l):''}</strong><span> · dernier sorti</span>`}return`<strong>${it.src==='tm'?'S'+P.next.s+'E'+P.next.e:(it.ty==='M'?'Ch. ':'Ép. ')+P.next.e}</strong>${!P.open&&P.left>1?`<span> +${P.left-1}</span>`:''}`};
+  return o?`<strong>${o.lab.replace(' · ','').replace('Épisode ','Ép. ')}</strong><span> · ${when(o).a.toLowerCase()}</span>`:`<strong>${l?shortEp(it,l):''}</strong><span> · à jour</span>`}
+ if(it.ty==='M')return`<strong>Ch. ${maxSeen(it)}</strong>${P.open?'':`<span> sur ${P.total}</span>`}`;   // manga : où j'en suis, sur le nombre de chapitres sortis
+ return`<strong>${it.src==='tm'?'S'+P.next.s+'E'+P.next.e:'Ép. '+P.next.e}</strong>${P.left>1?`<span> +${P.left-1}</span>`:''}`};
 function nextHTML(X){
  if(S.hv==='g')return`<div class="grid ng">${X.map(({it,P})=>`<button class=pc data-a=open data-k="${it.k}"><div class=im>${img(it)}<span class="ob${P.next?'':' dn'}"><i style="width:${P.pct}%"></i></span></div><span class=nl>${nxLab(it,P)}</span></button>`).join('')}</div>`;
- return X.map(({it,P})=>`<div class=nr><button class=th data-a=open data-k="${it.k}">${img(it)}</button><button class=tx data-a=open data-k="${it.k}"><b>${esc(it.t)}</b><span class=nl>${nxLab(it,P)}</span><em>${P.open?'Ch. '+maxSeen(it)+' lu':P.seen+'/'+P.total}</em><span class="pb${P.next?'':' dn'}"><i style="width:${P.pct}%"></i></span></button>${P.next?`<button class=ck data-a=tg data-k="${it.k}" data-id="${P.next.id}" aria-label="Marquer comme vu">${SI('check',20,3)}</button>`:''}</div>`).join('')}
+ return X.map(({it,P})=>`<div class=nr><button class=th data-a=open data-k="${it.k}">${img(it)}</button><button class=tx data-a=open data-k="${it.k}"><b>${esc(it.t)}</b><span class=nl>${nxLab(it,P)}</span><em>${P.open?'Total inconnu':P.seen+'/'+P.total}</em><span class="pb${P.next?'':' dn'}"><i style="width:${P.pct}%"></i></span></button>${P.next?`<button class=ck data-a=tg data-k="${it.k}" data-id="${P.next.id}" aria-label="Marquer comme vu">${SI('check',20,3)}</button>`:''}</div>`).join('')}
 const hvBtn=()=>`<button class=hv data-a=hv aria-label="Changer d’affichage">${SI(S.hv==='g'?'rows':'tiles',24)}</button>`;
 const mini=(l,X)=>X.length?`<h2>${l}<small>${X.length}</small></h2><div class="hs mix">${X.map(({it})=>card(it,'list')).join('')}</div>`:'';
 const HSEC=[['T','Séries'],['A','Animés'],['M','Mangas']];
@@ -480,10 +493,10 @@ function detView(){const it=obj(VIEW);if(!it)return'';const inl=!!S.items[it.k],
  <div class=hero style="${D&&D.ban?`background-image:url('${esc(D.ban)}')`:''}"></div>
  <div class=hd><div class=po>${img(it)}</div><div><h1>${esc(it.t)}</h1><div class=mut>${[it.lb,it.yr||'',STL[it.st]||''].filter(Boolean).join(' · ')}</div>${it.g&&it.g.length?`<div class=gen>${it.g.map(esc).join(' · ')}</div>`:''}</div></div>
  ${inl?chips(UST,it.s,'us'):`<button class=big data-a=add>+ Ajouter à ma liste</button>`}
- ${inl||P.seen?`<div class=prg><div class="pb${P.pct>=100&&!P.open?' dn':''}"><i style="width:${P.pct}%"></i></div><div><span>${P.open?(P.seen?'Lu jusqu’au chapitre '+maxSeen(it)+' · total inconnu, sortie en cours':'Pas commencé'):P.seen+' / '+P.total+' '+u+'s'}</span><span>${P.open?'':P.pct+' %'}</span></div></div>`:''}
+ ${inl||P.seen?`<div class=prg><div class="pb${P.pct>=100&&!P.open?' dn':''}"><i style="width:${P.pct}%"></i></div><div><span>${P.open?(P.seen?'Lu jusqu’au chapitre '+maxSeen(it)+' · nombre de chapitres sortis inconnu':'Pas commencé'):P.seen+' / '+P.total+' '+u+'s'}</span><span>${P.open?'':P.pct+' %'}</span></div></div>`:''}
  ${o?(w=>`<div class=nxt>${SI('cal',22)}<div><b>${o.lab} · ${w.a}${w.b?' ('+w.b+')':''}</b>${o.est?'Estimation d’après le jour de sortie choisi':'Prochaine sortie'}</div></div>`)(when(o)):''}
  ${D&&D.desc?`<p class=desc data-a=desc>${esc(D.desc)}</p>`:''}
- ${it.ty==='M'?`<div class=box><label>J’en suis au chapitre…</label><div class=inl><input id=upto type=number inputmode=numeric min=0 placeholder="ex. 132" value="${maxSeen(it)||''}"><button data-a=upto>OK</button></div></div>`:''}
+ ${it.ty==='M'?`<div class=box><label>J’en suis au chapitre…</label><div class=inl><input id=upto type=number inputmode=numeric min=0 placeholder="ex. 132" value="${maxSeen(it)||''}"><button data-a=upto>OK</button></div><p class=rel>${it.tot?it.tot+' chapitres au total.':it.rel||it.relm?'Environ '+released(it)+' chapitres sortis'+(it.relm?' (valeur que tu as saisie).':' (estimation d’après les lecteurs d’AniList).'):'Nombre de chapitres sortis inconnu pour l’instant.'}</p>${it.tot?'':`<label>Chapitres sortis, si tu veux corriger</label><div class=inl><input id=relm type=number inputmode=numeric min=0 placeholder="ex. 230" value="${it.relm||''}"><button data-a=relm>OK</button></div>`}</div>`:''}
  ${it.ty==='M'?'':`<h2>${it.src==='tm'&&G.length>1?'Saisons':'Épisodes'}</h2>
  ${D&&D.err?`<p class=err>${esc(D.err)}</p>`:''}${body||(D?`<div class=note>Aucun ${u} annoncé pour l’instant.</div>`:`<div class=empty>Chargement…</div>`)}`}
  ${D&&D.cast&&D.cast.length?`<h2>Acteurs</h2><div class="hs cast">${D.cast.map(c=>`<div class=ca><span class=ph2>${c.p?`<img src="${esc(c.p)}" alt="" loading=lazy>`:esc((c.n||'?').split(' ').map(w=>w[0]).slice(0,2).join(''))}</span><b>${esc(c.r||'—')}</b><small>${esc(c.n)}</small>${c.v?'<em>voix</em>':''}</div>`).join('')}</div>`:''}`}
@@ -549,6 +562,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
  if(a==='grp'){const O=OPEN[VIEW]=OPEN[VIEW]||new Set();if(O.has(d.g))O.delete(d.g);else{O.add(d.g);if(it.src==='tm')loadSeason(VIEW,+d.g)}return render()}
  if(a==='gall'){const x=ensure(VIEW),P=prog(x),g=groups(x,P.L).find(g=>g.id===d.g),ok=g.L.filter(y=>y.ok),full=ok.every(y=>P.w.has(y.id));ok.forEach(y=>full?P.w.delete(y.id):P.w.add(y.id));return commit(x,P.w)}
  if(a==='more'){it.cnt=eps(it).length+25;if(S.items[VIEW])touch(it);return render()}
+ if(a==='relm'){const x=ensure(VIEW),n=Math.max(0,Math.floor(+$('#relm').value||0));x.relm=n||undefined;touch(x);return render()}
  if(a==='upto'){const n=Math.max(0,Math.floor(+$('#upto').value||0)),x=ensure(VIEW);if(x.tot&&n>x.tot)return alertMsg('Cette œuvre compte '+x.tot+' chapitres.');
   if(!x.tot)x.cnt=Math.max(x.cnt||0,n+1);const w=new Set();for(let i=1;i<=n;i++)w.add(i);delete OPEN[VIEW];x.w=[...w];commit(x,w);initOpen(VIEW);return render()}
  if(a==='split'){const x=ensure(VIEW),v=($('#split').value.match(/\d+/g)||[]).map(Number).filter(n=>n>0&&n<5000).slice(0,30);x.sp=v.length?v:undefined;delete OPEN[VIEW];touch(x);initOpen(VIEW);return render()}

@@ -286,7 +286,7 @@ function eps(it){const out=[];
  const mx=maxSeen(it);let n,av;
  if(it.ty==='A'){av=it.st==='soon'?0:it.nx?it.nx.e-1:it.tot;n=it.tot||Math.max(av,mx,it.nx?it.nx.e:0);
   if(!n&&it.st!=='soon')n=av=Math.max(mx+1,it.cnt||12);av=Math.max(av,mx)}
- else{n=it.tot||Math.max(mx+1,it.cnt||25,(it.sp||[]).reduce((a,b)=>a+b,0));av=n}
+ else{n=it.tot||Math.max(mx+1,it.cnt||25);av=n}
  for(let e=1;e<=n;e++)out.push({id:e,e,ok:e<=av});return out}
 const unit=it=>it.ty==='M'?'chapitre':'épisode';
 const epLab=(it,x)=>it.src==='tm'?'S'+x.s+' · E'+x.e:(it.ty==='M'?'Chapitre ':'Épisode ')+x.e;
@@ -317,8 +317,6 @@ function markUpTo(k,id,withPrev){const it=ensure(k);if(!it)return;const w=seenSe
 const today0=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime()};
 function nextOut(it){
  if(it.nx&&it.nx.at>=(it.nx.d?today0():Date.now()-3600e3))return{at:it.nx.at,d:it.nx.d,lab:it.src==='tm'?'S'+it.nx.s+' · E'+it.nx.e:'Épisode '+it.nx.e};
- if(it.ty==='M'&&it.day!=null&&it.st!=='fin'&&it.st!=='stop'){const t=today0(),add=(it.day-new Date(t).getDay()+7)%7;
-  return{at:t+add*DAY,d:1,est:1,lab:'Nouveau chapitre (estimé)'}}
  return null}
 function when(o){const dd=Math.round((new Date(new Date(o.at).setHours(0,0,0,0))-today0())/DAY),D=new Date(o.at);
  const h=o.d?'':D.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
@@ -433,7 +431,7 @@ function homeView(){const all=Object.values(S.items),H=homeSets(),MAX=8;
  return`<header><h1>Home</h1>${gear}</header>
  <h2 class=h2r><span>Suivant</span>${H.next.length>MAX?`<button data-a=all data-v=next>Tout voir (${H.next.length})</button>`:''}</h2>
  ${H.next.length?`<div class=hvr>${hvBtn()}</div>`+nextHTML(H.next.slice(0,MAX)):`<div class=note>${H.fresh.length||H.stale.length?'Rien en cours pour le moment.':'Tu es à jour partout. Les nouveaux épisodes apparaîtront ici dès leur sortie.'}</div>`}
- <h2>Prochaines sorties</h2>${up.length?up.map(({it,o})=>{const w=when(o);return`<button class=rw data-a=open data-k="${it.k}" style="width:100%"><span class=th>${img(it)}</span><span class=tx><b>${esc(it.t)}</b><span>${o.lab}</span></span><span class=dd><b>${w.a}</b><small>${w.b}</small></span></button>`}).join(''):`<div class=note>Aucune date annoncée pour l’instant. Pour un manga ou un webtoon, indique son jour de sortie habituel dans sa fiche.</div>`}
+ <h2>Prochaines sorties</h2>${up.length?up.map(({it,o})=>{const w=when(o);return`<button class=rw data-a=open data-k="${it.k}" style="width:100%"><span class=th>${img(it)}</span><span class=tx><b>${esc(it.t)}</b><span>${o.lab}</span></span><span class=dd><b>${w.a}</b><small>${w.b}</small></span></button>`}).join(''):`<div class=note>Aucune date de sortie annoncée pour l’instant.</div>`}
  ${mini('Pas commencées',H.fresh)}${mini('Pas regardées depuis un moment',H.stale)}`}
 
 /* Rangées de My List : « À voir plus tard » (tous types), puis une rangée par type */
@@ -466,14 +464,12 @@ function detView(){const it=obj(VIEW);if(!it)return'';const inl=!!S.items[it.k],
  <div class=hero style="${D&&D.ban?`background-image:url('${esc(D.ban)}')`:''}"></div>
  <div class=hd><div class=po>${img(it)}</div><div><h1>${esc(it.t)}</h1><div class=mut>${[it.lb,it.yr||'',STL[it.st]||''].filter(Boolean).join(' · ')}</div>${it.g&&it.g.length?`<div class=gen>${it.g.map(esc).join(' · ')}</div>`:''}</div></div>
  ${inl?chips(UST,it.s,'us'):`<button class=big data-a=add>+ Ajouter à ma liste</button>`}
- ${inl||P.seen?`<div class=prg><div class="pb${P.pct>=100&&!P.open?' dn':''}"><i style="width:${P.pct}%"></i></div><div><span>${P.open?(P.seen?'Lu jusqu’au chapitre '+maxSeen(it):'Pas commencé'):P.seen+' / '+P.total+' '+u+'s'}</span><span>${P.open?'':P.pct+' %'}</span></div></div>`:''}
+ ${inl||P.seen?`<div class=prg><div class="pb${P.pct>=100&&!P.open?' dn':''}"><i style="width:${P.pct}%"></i></div><div><span>${P.open?(P.seen?'Lu jusqu’au chapitre '+maxSeen(it)+' · total inconnu, sortie en cours':'Pas commencé'):P.seen+' / '+P.total+' '+u+'s'}</span><span>${P.open?'':P.pct+' %'}</span></div></div>`:''}
  ${o?(w=>`<div class=nxt>${SI('cal',22)}<div><b>${o.lab} · ${w.a}${w.b?' ('+w.b+')':''}</b>${o.est?'Estimation d’après le jour de sortie choisi':'Prochaine sortie'}</div></div>`)(when(o)):''}
  ${D&&D.desc?`<p class=desc data-a=desc>${esc(D.desc)}</p>`:''}
- ${it.ty==='M'?`<div class=box><label>J’en suis au chapitre…</label><div class=inl><input id=upto type=number inputmode=numeric min=0 placeholder="ex. 132" value="${maxSeen(it)||''}"><button data-a=upto>OK</button></div></div>
-  <div class=box><label>Découpage en saisons (facultatif) : nombre de chapitres de chaque saison</label><div class=inl><input id=split inputmode=numeric placeholder="ex. 90, 168" value="${(it.sp||[]).join(', ')}"><button data-a=split>OK</button></div></div>
-  ${it.st!=='fin'&&it.st!=='stop'?`<div class=box><label>Jour de sortie habituel (pour estimer le prochain chapitre)</label><div class=days>${['L','M','M','J','V','S','D'].map((l,i)=>{const d=(i+1)%7;return`<button class="${it.day===d?'on':''}" data-a=day data-v=${d}>${l}</button>`}).join('')}</div></div>`:''}`:''}
- <h2>${it.ty==='M'?'Chapitres':it.src==='tm'&&G.length>1?'Saisons':'Épisodes'}</h2>
- ${D&&D.err?`<p class=err>${esc(D.err)}</p>`:''}${body||(D?`<div class=note>Aucun ${u} annoncé pour l’instant.</div>`:`<div class=empty>Chargement…</div>`)}
+ ${it.ty==='M'?`<div class=box><label>J’en suis au chapitre…</label><div class=inl><input id=upto type=number inputmode=numeric min=0 placeholder="ex. 132" value="${maxSeen(it)||''}"><button data-a=upto>OK</button></div></div>`:''}
+ ${it.ty==='M'?'':`<h2>${it.src==='tm'&&G.length>1?'Saisons':'Épisodes'}</h2>
+ ${D&&D.err?`<p class=err>${esc(D.err)}</p>`:''}${body||(D?`<div class=note>Aucun ${u} annoncé pour l’instant.</div>`:`<div class=empty>Chargement…</div>`)}`}
  ${D&&D.cast&&D.cast.length?`<h2>Acteurs</h2><div class="hs cast">${D.cast.map(c=>`<div class=ca><span class=ph2>${c.p?`<img src="${esc(c.p)}" alt="" loading=lazy>`:esc((c.n||'?').split(' ').map(w=>w[0]).slice(0,2).join(''))}</span><b>${esc(c.r||'—')}</b><small>${esc(c.n)}</small>${c.v?'<em>voix</em>':''}</div>`).join('')}</div>`:''}`}
 
 function overlay(){const f=F;if(!f)return'';
@@ -486,7 +482,7 @@ function overlay(){const f=F;if(!f)return'';
   return`<div class=sov data-a=fno><div class="sheet cfg"><div class=grab></div><h2>${esc(it.t)}</h2>
   ${inl?'':M('madd','plus','Ajouter à ma liste','','gr')}
   ${inl&&it.s==='plan'?'':M('mlater','mark','À voir plus tard','Range l’œuvre dans ta rangée « À voir plus tard ».')}
-  ${ok&&P.left?M('mall','check','Tout marquer comme vu',pl(ok,u)+' '+(ok>1?'sortis':'sorti')):''}
+  ${ok&&P.left&&!P.open?M('mall','check','Tout marquer comme vu',pl(ok,u)+' '+(ok>1?'sortis':'sorti')):''}
   ${P.seen?M('mzero','undo','Remettre à zéro','Décoche tous les '+u+'s.'):''}
   ${M('ext','ext','Voir sur '+(it.src==='tm'?'TMDB':'AniList'),'Ouvre la page de l’œuvre.')}
   ${inl?M('rm','trash','Retirer de ma liste','Efface aussi ta progression.','red'):''}</div></div>`}

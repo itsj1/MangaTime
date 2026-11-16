@@ -106,6 +106,7 @@ header.sh{justify-content:flex-start;gap:12px}
 .nr .tx b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:17px;line-height:1.2;font-weight:700}
 .nl{display:block;margin-top:5px;font-size:14px;color:var(--mut)}
 .nl strong{color:var(--ink);font-size:16px;font-weight:800}
+.nl strong.utd{color:var(--ok)}
 .nr .tx em{display:block;font-style:normal;font-size:13px;font-weight:700;color:var(--act);margin:8px 0 4px}
 .nr .pb{display:block;height:6px;margin:0}
 .nr .ck{width:42px;height:42px;border-color:var(--ink);color:var(--ink)}
@@ -242,7 +243,7 @@ const BR={},DET={},OPEN={};          // œuvres vues en recherche, détails char
 const obj=k=>S.items[k]||BR[k];
 
 /* Icônes */
-const IC={search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',home:'<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>',list:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',back:'<path d="m15 5-7 7 7 7"/>',chev:'<path d="m9 5 7 7-7 7"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',sync:'<path d="M20 11a8 8 0 0 0-14.3-4.4L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.4l1.7-1.9"/><path d="M20 20v-4.5h-4.5"/>',down:'<path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>',upl:'<path d="M12 16V5"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',dots:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',plus:'<path d="M12 5v14M5 12h14"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',undo:'<path d="M4 8h10a6 6 0 0 1 0 12H8"/><path d="m8 4-4 4 4 4"/>',ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',mark:'<path d="M6 4h12v17l-6-4.5L6 21z"/>',tiles:'<rect x="4" y="4" width="4" height="6" rx="1"/><rect x="10" y="4" width="4" height="6" rx="1"/><rect x="16" y="4" width="4" height="6" rx="1"/><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="14" width="4" height="6" rx="1"/><rect x="16" y="14" width="4" height="6" rx="1"/>',rows:'<rect x="4" y="4" width="16" height="6" rx="1.5"/><rect x="4" y="14" width="16" height="6" rx="1.5"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>'};
+const IC={search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',home:'<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>',list:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',back:'<path d="m15 5-7 7 7 7"/>',chev:'<path d="m9 5 7 7-7 7"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',sync:'<path d="M20 11a8 8 0 0 0-14.3-4.4L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.4l1.7-1.9"/><path d="M20 20v-4.5h-4.5"/>',down:'<path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>',upl:'<path d="M12 16V5"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',dots:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',plus:'<path d="M12 5v14M5 12h14"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',undo:'<path d="M4 8h10a6 6 0 0 1 0 12H8"/><path d="m8 4-4 4 4 4"/>',ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',mark:'<path d="M6 4h12v17l-6-4.5L6 21z"/>',tiles:'<rect x="4" y="4" width="4" height="6" rx="1"/><rect x="10" y="4" width="4" height="6" rx="1"/><rect x="16" y="4" width="4" height="6" rx="1"/><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="14" width="4" height="6" rx="1"/><rect x="16" y="14" width="4" height="6" rx="1"/>',rows:'<rect x="4" y="4" width="16" height="6" rx="1.5"/><rect x="4" y="14" width="16" height="6" rx="1.5"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>'};
 const SI=(n,z=22,w=2)=>`<svg width=${z} height=${z} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
 
 /* ============ Sources de données ============ */
@@ -402,7 +403,7 @@ function card(it,mode){const inl=!!S.items[it.k];let ex='';
  else ex=`<b>${esc(it.t)}</b><small>${it.yr||''}</small>`;
  return`<button class="pc${mode==='list'?' lm':''}" data-a=open data-k="${it.k}"><div class=im>${img(it)}<span class=tg>${esc(it.lb)}</span>${mode!=='list'&&inl?`<span class=in>${SI('check',14,3)}</span>`:''}</div>${ex}</button>`}
 const chips=(L,cur,a)=>`<div class=chips>${L.map(([v,l])=>`<button class="chip${cur===v?' on':''}" data-a=${a} data-v=${v}>${l}</button>`).join('')}</div>`;
-const tabbar=()=>`<nav class=tabs>${[['disc','search','Discover'],['home','home','Home'],['list','list','My List'],['cal','cal','Calendrier']].map(([k,i,l])=>`<button class="${TAB===k?'on':''}" data-a=tab data-t=${k}><span>${SI(i,24)}</span>${l}</button>`).join('')}</nav>`;
+const tabbar=()=>`<nav class=tabs>${[['disc','search','Discover'],['home','home','Home'],['cal','cal','Calendrier'],['list','user','Mon profil']].map(([k,i,l])=>`<button class="${TAB===k?'on':''}" data-a=tab data-t=${k}><span>${SI(i,24)}</span>${l}</button>`).join('')}</nav>`;
 const gear=`<button class=ib data-a=cfg aria-label="Réglages">${SI('gear',21,1.7)}</button>`;
 
 function resHTML(){
@@ -418,12 +419,14 @@ function discView(){return`<header><h1>Discover</h1>${gear}</header>
 
 /* Home : ce que je regarde, façon TVTime */
 const STALE=30*DAY,lastW=it=>it.lw||it.u||it.a||0;
-function homeSets(){const X=Object.values(S.items).filter(it=>it.s==='cur').map(it=>({it,P:prog(it)})).filter(x=>x.P.next).sort((a,b)=>lastW(b.it)-lastW(a.it)),now=Date.now();
- return{next:X.filter(x=>x.P.seen&&now-lastW(x.it)<=STALE),fresh:X.filter(x=>!x.P.seen),stale:X.filter(x=>x.P.seen&&now-lastW(x.it)>STALE)}}
-const nxLab=(it,P)=>`<strong>${it.src==='tm'?'S'+P.next.s+'E'+P.next.e:(it.ty==='M'?'Ch. ':'Ép. ')+P.next.e}</strong>${!P.open&&P.left>1?`<span> +${P.left-1}</span>`:''}`;
+const ended=it=>it.st==='fin'||it.st==='stop';
+/* next : en cours (un épisode à voir, ou à jour sur une œuvre pas encore terminée) ; fresh : pas commencées ; stale : délaissées */
+function homeSets(){const X=Object.values(S.items).filter(it=>it.s==='cur').map(it=>({it,P:prog(it)})).filter(x=>x.P.next||!ended(x.it)).sort((a,b)=>lastW(b.it)-lastW(a.it)),now=Date.now();
+ return{next:X.filter(x=>x.P.seen&&(!x.P.next||now-lastW(x.it)<=STALE)),fresh:X.filter(x=>!x.P.seen&&x.P.next),stale:X.filter(x=>x.P.seen&&x.P.next&&now-lastW(x.it)>STALE)}}
+const nxLab=(it,P)=>{if(!P.next){const o=nextOut(it);return`<strong class=utd>À jour</strong>${o?`<span> · ${o.lab.replace(' · ','')} ${when(o).a.toLowerCase()}</span>`:''}`}return`<strong>${it.src==='tm'?'S'+P.next.s+'E'+P.next.e:(it.ty==='M'?'Ch. ':'Ép. ')+P.next.e}</strong>${!P.open&&P.left>1?`<span> +${P.left-1}</span>`:''}`};
 function nextHTML(X){
  if(S.hv==='g')return`<div class="grid ng">${X.map(({it,P})=>`<button class=pc data-a=open data-k="${it.k}"><div class=im>${img(it)}<span class=ob><i style="width:${P.pct}%"></i></span></div><span class=nl>${nxLab(it,P)}</span></button>`).join('')}</div>`;
- return X.map(({it,P})=>`<div class=nr><button class=th data-a=open data-k="${it.k}">${img(it)}</button><button class=tx data-a=open data-k="${it.k}"><b>${esc(it.t)}</b><span class=nl>${nxLab(it,P)}</span><em>${P.open?'Ch. '+maxSeen(it)+' lu':P.seen+'/'+P.total}</em><span class=pb><i style="width:${P.pct}%"></i></span></button><button class=ck data-a=tg data-k="${it.k}" data-id="${P.next.id}" aria-label="Marquer comme vu">${SI('check',20,3)}</button></div>`).join('')}
+ return X.map(({it,P})=>`<div class=nr><button class=th data-a=open data-k="${it.k}">${img(it)}</button><button class=tx data-a=open data-k="${it.k}"><b>${esc(it.t)}</b><span class=nl>${nxLab(it,P)}</span><em>${P.open?'Ch. '+maxSeen(it)+' lu':P.seen+'/'+P.total}</em><span class=pb><i style="width:${P.pct}%"></i></span></button>${P.next?`<button class=ck data-a=tg data-k="${it.k}" data-id="${P.next.id}" aria-label="Marquer comme vu">${SI('check',20,3)}</button>`:''}</div>`).join('')}
 const hvBtn=()=>`<button class=hv data-a=hv aria-label="Changer d’affichage">${SI(S.hv==='g'?'rows':'tiles',24)}</button>`;
 const mini=(l,X)=>X.length?`<h2>${l}<small>${X.length}</small></h2><div class="hs mix">${X.map(({it})=>card(it,'list')).join('')}</div>`:'';
 const HSEC=[['T','Séries'],['A','Animés'],['M','Mangas']];
@@ -432,7 +435,7 @@ function homeView(){const all=Object.values(S.items),H=homeSets(),MAX=5;
  const sec=HSEC.map(([t,l])=>{const X=H.next.filter(x=>x.it.ty===t);return X.length?`<h2 class=h2r><span>${l}<small>${X.length}</small></span>${X.length>MAX?`<button data-a=all data-v="next:${t}">Tout voir (${X.length})</button>`:''}</h2>${nextHTML(X.slice(0,MAX))}`:''}).join('');
  return`<header><h1>Home</h1><span class=hbt>${H.next.length?hvBtn():''}${gear}</span></header>
  ${sec||`<div class=note>${H.fresh.length||H.stale.length?'Rien en cours pour le moment.':'Tu es à jour partout. Les nouveaux épisodes apparaîtront ici dès leur sortie ; les dates sont dans l’onglet Calendrier.'}</div>`}
- ${mini('Pas commencées',H.fresh)}${mini('Pas regardées depuis un moment',H.stale)}`}
+ ${mini('Pas commencées',H.fresh)}${mini('Pas regardées depuis un moment',H.stale)}${listRow(['plan','À voir plus tard'])}`}
 
 /* Calendrier : prochaines sorties des séries et animés suivis, jour par jour */
 function calView(){const up=Object.values(S.items).filter(it=>it.s==='cur'||it.s==='plan').map(it=>({it,o:nextOut(it)})).filter(x=>x.o).sort((a,b)=>a.o.at-b.o.at);
@@ -444,18 +447,19 @@ function calView(){const up=Object.values(S.items).filter(it=>it.s==='cur'||it.s
  return`<header><h1>Calendrier</h1>${gear}</header>${out||`<div class=empty><b>Aucune sortie annoncée</b>Les prochains épisodes de tes séries et animés en cours apparaîtront ici, jour par jour.</div>`}`}
 
 /* Rangées de My List : « À voir plus tard » (tous types), puis une rangée par type */
-const SECS=[['plan','À voir plus tard'],['T','Mes séries'],['A','Mes animés'],['M','Mes mangas']];
-function secItems(t){const L=Object.values(S.items).filter(x=>FS==='all'||x.s===FS).sort((a,b)=>(b.u||b.a||0)-(a.u||a.a||0));
- return t==='plan'?L.filter(x=>x.s==='plan'):L.filter(x=>x.ty===t&&x.s!=='plan')}
+const SECS=[['T','Mes séries'],['A','Mes animés'],['M','Mes mangas']],SECL={plan:'À voir plus tard'};SECS.forEach(x=>SECL[x[0]]=x[1]);
+function secItems(t){const all=Object.values(S.items).sort((a,b)=>(b.u||b.a||0)-(a.u||a.a||0));
+ if(t==='plan')return all.filter(x=>x.s==='plan');
+ return all.filter(x=>x.ty===t&&(FS==='all'?x.s!=='plan':x.s===FS))}
+const listRow=([t,l])=>{const X=secItems(t);return X.length?`<h2 class=h2r><span>${l}<small>${X.length}</small></span>${X.length>1?`<button data-a=all data-v=${t}>Tout voir</button>`:''}</h2><div class="hs${t==='plan'?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`:''};
 function subView(){if(SUBV.startsWith('next:')){const t=SUBV.slice(5),X=homeSets().next.filter(x=>x.it.ty===t);return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${(HSEC.find(x=>x[0]===t)||[])[1]||''}<small>${X.length}</small></h1><span class=hbt style="margin-left:auto">${hvBtn()}</span></header>${nextHTML(X)}`}
- const X=secItems(SUBV),l=(SECS.find(x=>x[0]===SUBV)||[])[1]||'';
+ const X=secItems(SUBV),l=SECL[SUBV]||'';
  return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${l}<small>${X.length}</small></h1></header>
  ${X.length?`<div class="grid${SUBV==='plan'?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`:`<div class=empty><b>Rien ici</b>Cette rangée est vide.</div>`}`}
 function listView(){const all=Object.values(S.items);
  const epi=all.filter(x=>x.ty!=='M').reduce((a,x)=>a+x.w.length,0),ch=all.filter(x=>x.ty==='M').reduce((a,x)=>a+x.w.length,0);
- const row=([t,l])=>{const X=secItems(t);return X.length?`<h2 class=h2r><span>${l}<small>${X.length}</small></span>${X.length>1?`<button data-a=all data-v=${t}>Tout voir</button>`:''}</h2><div class="hs${t==='plan'?' mix':''}">${X.map(x=>card(x,'list')).join('')}</div>`:''};
- const sec=SECS.map(row).join('');
- return`<header><h1>My List</h1>${gear}</header>
+ const sec=SECS.map(listRow).join('');
+ return`<header><h1>Mon profil</h1>${gear}</header>
  <div class=stats><div><b>${all.length}</b><span>œuvres</span></div><div><b>${epi}</b><span>épisodes vus</span></div><div><b>${ch}</b><span>chapitres lus</span></div></div>
  ${chips([['all','Tous les statuts'],...UST],FS,'fs')}
  ${sec||`<div class=empty><b>Rien ici</b>${all.length?'Aucune œuvre ne correspond à ce statut.':'Ajoute des œuvres depuis Discover.'}</div>`}`}

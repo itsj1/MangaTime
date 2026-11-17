@@ -332,10 +332,11 @@ const seenSet=it=>new Set(it.w||[]);
 const maxSeen=it=>it.src==='tm'?0:(it.w||[]).reduce((a,b)=>Math.max(a,b),0);
 /* Liste complète : {id,s?,e,ok} — ok = déjà sorti, donc cochable */
 function eps(it){const out=[];
- if(it.src==='tm'){const la=it.la,fin=it.st==='fin'||it.st==='stop';
+ if(it.src==='tm'){let la=it.la;const fin=it.st==='fin'||it.st==='stop',nx=it.nx;
+  if(nx&&nx.at<=today0()&&(!la||nx.s>la[0]||(nx.s===la[0]&&nx.e>la[1])))la=[nx.s,nx.e];   // sorti depuis la dernière mise à jour
   (it.ss||[]).forEach(([n,c,,f])=>{f=f||1;for(let e=f;e<f+c;e++)out.push({id:n+'-'+e,s:n,e,ok:la?(n<la[0]||(n===la[0]&&e<=la[1])):fin})});return out}
  const mx=maxSeen(it);let n,av;
- if(it.ty==='A'){av=it.st==='soon'?0:it.nx?it.nx.e-1:it.tot;n=it.tot||Math.max(av,mx,it.nx?it.nx.e:0);
+ if(it.ty==='A'){av=it.st==='soon'&&!it.nx?0:it.nx?(it.nx.at<=Date.now()?it.nx.e:it.nx.e-1):it.tot;n=it.tot||Math.max(av,mx,it.nx?it.nx.e:0);
   if(!n&&it.st!=='soon')n=av=Math.max(mx+1,it.cnt||12);av=Math.max(av,mx)}
  else{const R=released(it);n=it.tot||(R?Math.max(R,mx):Math.max(mx+1,it.cnt||25));av=n}
  for(let e=1;e<=n;e++)out.push({id:e,e,ok:e<=av});return out}
@@ -385,7 +386,7 @@ function markUpTo(k,id,withPrev){const it=ensure(k);if(!it)return;const w=seenSe
 /* ============ Dates de sortie ============ */
 const today0=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime()};
 function nextOut(it){
- if(it.nx&&it.nx.at>=(it.nx.d?today0():Date.now()-3600e3))return{at:it.nx.at,d:it.nx.d,lab:it.src==='tm'?'S'+it.nx.s+' · E'+it.nx.e:'Épisode '+it.nx.e};
+ if(it.nx&&it.nx.at>(it.nx.d?today0():Date.now()))return{at:it.nx.at,d:it.nx.d,lab:it.src==='tm'?'S'+it.nx.s+' · E'+it.nx.e:'Épisode '+it.nx.e};
  return null}
 function when(o){const dd=Math.round((new Date(new Date(o.at).setHours(0,0,0,0))-today0())/DAY),D=new Date(o.at);
  const h=o.d?'':D.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
@@ -395,9 +396,9 @@ const STL={fin:'Terminé',rel:'En cours de sortie',soon:'Pas encore sorti',stop:
 const UST=[['cur','En cours'],['plan','À voir plus tard'],['done','Terminé'],['pause','En pause'],['drop','Abandonné']];
 
 /* Rafraîchit les dates des œuvres suivies (au lancement, toutes les 6 h au plus) */
-async function refreshAll(force){
- const need=it=>['cur','plan','pause'].includes(it.s)&&(force||Date.now()-(it.nf||0)>6*3600e3);
- const L=Object.values(S.items).filter(need).concat(Object.values(S.items).filter(it=>!need(it)&&!it.g).slice(0,12));if(!L.length)return;   // + rattrapage des genres manquants
+async function refreshAll(force,only){
+ const need=it=>['cur','plan','pause'].includes(it.s)&&(force||Date.now()-(it.nf||0)>6*3600e3||(it.nx&&it.nx.at<Date.now()&&Date.now()-(it.nf||0)>1800e3));
+ const L=only||Object.values(S.items).filter(need).concat(Object.values(S.items).filter(it=>!need(it)&&!it.g).slice(0,12));if(!L.length)return;   // + rattrapage des genres manquants
  const A=L.filter(x=>x.src==='al');
  try{for(let i=0;i<A.length;i+=50){const d=await al(`query($ids:[Int]){Page(perPage:50){media(id_in:$ids){${ALF}}}}`,{ids:A.slice(i,i+50).map(x=>x.id)});
   d.Page.media.forEach(m=>{const it=S.items['al:'+m.id];if(it){meta(it,fromAL(m));it.nf=Date.now()}})}
@@ -513,8 +514,13 @@ function homeView(){const all=Object.values(S.items),H=homeSets(),MAX=5;
  ${mini('Pas commencées',H.fresh)}${mini('Pas regardées depuis un moment',H.stale)}${listRow(['plan','À voir plus tard'])}`}
 
 /* Calendrier : prochaines sorties des séries et animés suivis, jour par jour */
-function calView(){const up=Object.values(S.items).filter(it=>it.s==='cur'||it.s==='plan').map(it=>({it,o:nextOut(it)})).filter(x=>x.o).sort((a,b)=>a.o.at-b.o.at);
- let out='',cur=null;
+/* Calendrier : en haut les épisodes sortis à regarder (bulle pour valider), puis les prochaines sorties jour par jour */
+function calView(){const F0=Object.values(S.items).filter(it=>it.ty!=='M'&&(it.s==='cur'||it.s==='plan')),av=[],up=[];
+ F0.forEach(it=>{const P=prog(it);
+  if(it.s==='cur'&&P.seen&&P.next&&!ended(it))av.push({it,P});           // épisode sorti, pas encore vu
+  else{const o=nextOut(it);if(o)up.push({it,o})}});                  // sinon : date du prochain
+ av.sort((a,b)=>lastW(b.it)-lastW(a.it));up.sort((a,b)=>a.o.at-b.o.at);
+ let out=av.length?`<h2 class=h2r><span>Sortis, à regarder<small>${av.length}</small></span></h2>`+av.map(({it,P})=>`<div class=rw><button class=th data-a=open data-k="${it.k}">${img(it)}</button><button class=tx data-a=open data-k="${it.k}"><b>${esc(it.t)}</b><span><em>${shortEp(it,P.next)}</em>${P.left>1?' · encore '+P.left:''} · ${esc(it.lb)}</span></button><button class=ck data-a=tg data-k="${it.k}" data-id="${P.next.id}" aria-label="Marquer comme vu">${SI('check',20,3)}</button></div>`).join(''):'',cur=null;
  for(const{it,o}of up){const D=new Date(o.at),d0=new Date(D.getFullYear(),D.getMonth(),D.getDate()).getTime(),dd=Math.round((d0-today0())/DAY);
   if(d0!==cur){cur=d0;const full=D.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}).replace(/^./,c=>c.toUpperCase());
    out+=`<h2 class=h2r><span>${dd<=0?'Aujourd’hui':dd===1?'Demain':full}</span><small>${dd<=1?full:'dans '+dd+' j'}</small></h2>`}
@@ -677,7 +683,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
  if(a==='dt'){DT=d.v;RES=null;render();return search()}
  if(a==='clr'){const q=$('#q');q.value='';Q='';b.hidden=true;q.focus();clearTimeout(ST);return search()}
  if(a==='fs'){FS=d.v;return render()}
- if(a==='tg')return tog(d.k,d.id);
+ if(a==='tg'){tog(d.k,d.id);const x=S.items[d.k];if(TAB==='cal'&&!VIEW&&x&&!F&&!prog(x).next&&!nextOut(x))refreshAll(true,[x]);return}
  if(a==='askall')return markUpTo(F.key,F.id,true);
  if(a==='askone')return markUpTo(F.key,F.id,false);
  const it=VIEW&&obj(VIEW);

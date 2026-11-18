@@ -1,0 +1,57 @@
+# MangaTime — notes pour Claude
+
+App personnelle (un seul utilisateur) de suivi de **mangas / manhwas / webtoons**, **animés** et **séries** : où j'en suis, ce qu'il reste, quand sort la suite. Inspirée de l'ancienne app **TVTime**, avec le style de ma PWA **Fitness Tracker** (`itsj1/FitnessTracker`).
+
+- En ligne : https://itsj1.github.io/MangaTime (GitHub Pages, branche `main`).
+- Tout doit rester **gratuit** : pas de serveur, pas de service payant.
+- Langue de l'interface et des messages de commit : **français**.
+
+## Architecture
+
+- PWA en **un seul fichier `index.html`** (CSS + JS inline, sans framework ni build), plus `sw.js`, `manifest.json` et les icônes.
+- `sw.js` : réseau d'abord, cache en secours. **Incrémenter `CACHE` (`mangatime-vN`) à chaque version publiée** pour que le téléphone récupère la nouvelle.
+- Rendu : `render()` reconstruit `#app` en `innerHTML` ; les actions passent par `data-a=…` dans un seul écouteur de clic.
+- État d'affichage : `TAB` (`disc` / `home` / `cal` / `list`), `VIEW` (clé de l'œuvre ouverte), `SUBV` (sous-page : catégorie, `next:T`, `stats`…), `F` (feuille ou pop-up ouvert). Navigation retour via `history.pushState` / `popstate`.
+- `sheet.png` à la racine est une ancienne planche d'aperçu, inutile.
+
+## Données
+
+- `localStorage['mangatime-v1']` → `S = { items, del, cfg, sha, hv, pm }`.
+- Une œuvre = `S.items[k]`, avec `k` = `al:<id>` (AniList) ou `tm:<id>` (TMDB).
+  - `ty` : `A` animé, `T` série, `M` manga. `s` (mon suivi) : `cur`, `plan` (à voir plus tard), `done`, `pause`, `drop`.
+  - `w` : épisodes/chapitres cochés (ids `"saison-épisode"` pour TMDB, nombres pour AniList).
+  - `st` : statut de l'œuvre (`rel`, `soon`, `fin`, `stop`, `hia`). `nx` : prochain épisode annoncé. `la` : dernier épisode diffusé (TMDB).
+  - `ss` (TMDB) : `[n° saison, nb d'épisodes, nom, n° du 1er épisode, chargé]` — certaines œuvres numérotent en continu (Hunter x Hunter : la saison 2 commence à l'épisode 27).
+  - `rt` : durée moyenne d'un épisode (min). `rel` / `relm` : chapitres sortis d'un manga en cours (estimé / saisi). `u` (modifié), `a` (ajouté), `lw` (dernier épisode coché), `g` (genres).
+- `cfg` : clé TMDB, dépôt + fichier + jeton GitHub pour la synchro.
+
+## Sources
+
+- **TMDB** (clé API gratuite, saisie dans les réglages) : séries **et animés** — une seule fiche par œuvre, découpée en saisons ; saisons, épisodes (titres, vignettes, résumés), acteurs, genres, durées, prochain épisode.
+- **AniList** (GraphQL, sans clé) : mangas / manhwas / webtoons, et animés seulement en secours si aucune clé TMDB n'est saisie.
+- **Chapitres sortis d'un manga en cours** (AniList ne les donne pas) : MangaDex (`/manga?title=` puis `/aggregate`, fiche retrouvée via son lien AniList) + activité des lecteurs AniList ; on garde le max. Saisie manuelle seulement si rien n'est trouvé. Non vérifié en conditions réelles (CORS de MangaDex non confirmé).
+- Mention TMDB obligatoire, présente en bas des réglages.
+
+## Synchro entre appareils
+
+Fichier `mangatime-data.json` dans un **dépôt GitHub privé**, via l'API Contents (même principe que Fitness Tracker), avec un jeton fine-grained « Contents : Read and write ». Fusion œuvre par œuvre selon `u` ; les suppressions sont datées dans `del`.
+
+## Écrans
+
+- **Discover** : recherche (croix pour effacer), filtres Animés / Mangas & Webtoons / Séries, posters 3 par ligne avec titre sur 2 lignes fixes + année.
+- **Fiche** : genres, statut de suivi, barre d'avancement, prochaine sortie, saisons **repliées par défaut** (vignette + titre sur 2 lignes, bouton ⋯ si coupé), acteurs (rangée défilante, étiquette « voix »), bouton ⋯ en haut (ajouter / retirer, à voir plus tard, tout marquer, remettre à zéro, page source). Coche d'un épisode avec dialogue « précédents aussi / seulement celui-ci / annuler ». Mangas : seulement « J'en suis au chapitre… » + chapitres sortis (pas de grille, pas de saisons, pas de jour de sortie).
+- **Home** : sections Séries / Animés / Mangas (liste ou grille, « Tout voir » au-delà de 5), œuvres en cours y compris « à jour » sur une œuvre pas finie ; puis Pas commencées, Pas regardées depuis un moment (30 j), À voir plus tard. Libellés : `S2E11 +3`, `Ch. 215 / 230`, `S1E12 · à jour`, `S2E11 · jeudi` (sur une ligne).
+- **Calendrier** : « Sortis, à regarder » avec bulle pour valider (épisode suivant ou date du prochain ensuite), puis prochaines sorties jour par jour. Séries et animés uniquement.
+- **Profil** : stats (œuvres, temps passé, épisodes vus, chapitres lus) + « Détails » (page Statistiques par type) ; rangées Mes séries / Mes animés / Mes mangas. « Tout voir » ouvre une page catégorie : recherche, filtres et tri, affichage grille ×2 à ×5 / liste / détaillée, groupes Vu récemment · Pas regardé depuis un moment · À jour · Complété (toujours affichés, même à 0).
+
+## Design
+
+- Thème sombre par défaut (clair automatique), accent **jaune TVTime** `#ffd400`.
+- Barres : jaune = en cours, **vert** = à jour sur une œuvre en cours, **violet clair** = œuvre terminée entièrement vue, orange = pas regardée depuis un moment.
+- Bouton rond pour cocher un épisode ; feuilles par le bas (glisser pour fermer, fermeture animée) ; réglages en cartes groupées comme Fitness Tracker ; engrenage en haut à droite.
+- Onglets : Discover · Home · Calendrier · Profil.
+
+## Façon de travailler
+
+- L'utilisateur décrit ses demandes en français, souvent à l'oral : reformuler si ambigu, proposer des idées en plus.
+- Tester dans Chrome headless (Playwright) avec des réponses d'API simulées, vérifier sur captures, puis **pousser directement sur `main`** (le site se met à jour seul).

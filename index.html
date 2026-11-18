@@ -154,6 +154,12 @@ html[data-vt=back]::view-transition-new(root){animation:vtInL .32s cubic-bezier(
 @keyframes vtFL{from{transform:translateX(-28%)}to{transform:none}}
 #app.vtr{animation:vtFR .34s cubic-bezier(.3,.7,.2,1)}#app.vtl{animation:vtFL .34s cubic-bezier(.3,.7,.2,1)}
 body:has(#app.vtl),body:has(#app.vtr){overflow-x:hidden}
+/* glissement retour : chaque bloc de la page se décale (garde les éléments fixes comme le bouton ←), avec une ombre à gauche */
+body.swb{overflow-x:hidden}
+body.swb #app>*{transform:translateX(var(--sx,0))}
+body.swb #app.swa>*{transition:transform .24s cubic-bezier(.3,.7,.2,1)}
+body.swb:before{content:"";position:fixed;left:0;top:0;bottom:0;width:var(--sx,0);background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(0,0,0,.5));box-shadow:inset -10px 0 14px -10px rgba(0,0,0,.6);pointer-events:none;z-index:6}
+body.swb.swa:before{transition:width .24s cubic-bezier(.3,.7,.2,1)}
 .hv{width:40px;height:40px;display:grid;place-items:center;color:var(--ink)}
 .nr{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .nr .th{flex:none;width:84px;aspect-ratio:2/3;border-radius:8px;overflow:hidden;background:var(--card);border:1px solid var(--line)}
@@ -219,6 +225,15 @@ body:has(#app.vtl),body:has(#app.vtr){overflow-x:hidden}
 .box label{display:block;font-size:13px;color:var(--mut);margin-bottom:8px}
 .box .rel{font-size:14px;color:var(--act);margin:10px 0 12px}
 .box .rel:last-child{margin-bottom:0}
+#toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);opacity:0;pointer-events:none;z-index:30;width:max-content;max-width:calc(100% - 32px);display:flex;align-items:center;gap:14px;padding:10px 10px 10px 16px;border-radius:14px;background:#2a2b2e;color:#f4f4f0;box-shadow:0 6px 24px rgba(0,0,0,.35);font-size:14px;transition:transform .22s cubic-bezier(.3,.7,.2,1),opacity .22s}
+#toast.lo{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+#toast.on{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+#toast span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#toast button{flex:none;color:#ffd400;font-weight:800;font-size:14px;padding:6px 8px;border-radius:8px}
+.box .rsrc{font-size:12px;line-height:1.4;color:var(--mut);margin:-6px 0 12px}
+.box .rsrc b{color:var(--ink);font-weight:700}
+.box .rsrc:last-child{margin-bottom:0}
+.rfb{color:var(--act);font-weight:700;font-size:12px;padding:2px 0 2px 4px}
 .inl{display:flex;gap:8px}
 .inl input{flex:1;min-width:0}
 .inl button{flex:none;padding:0 18px;border-radius:14px;background:var(--acc);color:var(--on);font-weight:700}
@@ -367,17 +382,26 @@ const released=it=>it.tot||it.rel||it.relm||0;
 /* AniList ne donne pas le dernier chapitre d'un manga en cours. Deux sources automatiques, on garde la plus haute :
    1. MangaDex : la liste réelle des chapitres publiés (la fiche est retrouvée grâce à son identifiant AniList) ;
    2. l'activité des lecteurs AniList (« a lu le chapitre N ») : 2e valeur la plus haute, pour écarter une saisie isolée. */
+/* Chaque source renvoie un nombre (0 = introuvable) ou lève une erreur explicite ; le détail est gardé dans it.rs pour la fiche */
+const xf=async u=>{let r;try{r=await fetch(u)}catch{throw new Error('bloqué')}if(!r.ok)throw new Error('erreur '+r.status);return r.json()};
 async function relMD(it){
- const r=await fetch('https://api.mangadex.org/manga?limit=10&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&title='+encodeURIComponent(it.t));if(!r.ok)return 0;
- const m=((await r.json()).data||[]).find(x=>String(((x.attributes||{}).links||{}).al||'')===String(it.id));if(!m)return 0;
- const a=await fetch('https://api.mangadex.org/manga/'+m.id+'/aggregate');if(!a.ok)return 0;
- let mx=0;Object.values((await a.json()).volumes||{}).forEach(v=>Object.keys(v.chapters||{}).forEach(c=>{const n=Math.floor(parseFloat(c));if(n>mx&&n<20000)mx=n}));return mx}
+ const r=await xf('https://api.mangadex.org/manga?limit=10&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&title='+encodeURIComponent(it.t));
+ const m=(r.data||[]).find(x=>String(((x.attributes||{}).links||{}).al||'')===String(it.id));if(!m)return 0;
+ const a=await xf('https://api.mangadex.org/manga/'+m.id+'/aggregate');
+ let mx=0;Object.values(a.volumes||{}).forEach(v=>Object.keys(v.chapters||{}).forEach(c=>{const n=Math.floor(parseFloat(c));if(n>mx&&n<20000)mx=n}));return mx}
 async function relAL(it){
  const d=await al('query($id:Int){Page(perPage:50){activities(mediaId:$id,type:MANGA_LIST,sort:ID_DESC){... on ListActivity{progress status}}}}',{id:it.id});
  const v=(d.Page.activities||[]).filter(a=>a&&a.progress&&/chapter/i.test(a.status||'')).map(a=>Math.max(...(String(a.progress).match(/\d+/g)||[0]).map(Number))).filter(n=>n>0&&n<20000).sort((a,b)=>b-a);
  return v.length>1?v[1]:v[0]||0}
-async function estRel(it){const R=await Promise.allSettled([relMD(it),relAL(it)]),n=Math.max(...R.map(x=>x.status==='fulfilled'?x.value||0:0));
- if(n)it.rel=n;it.rf=Date.now()}
+async function estRel(it){RP.add(it.k);let R;try{R=await Promise.allSettled([relMD(it),relAL(it)])}finally{RP.delete(it.k)}const v=R.map(x=>x.status==='fulfilled'?x.value||0:((x.reason&&x.reason.message)||'').length<14?x.reason.message||'erreur':'erreur'),n=Math.max(...v.map(x=>+x||0));
+ it.rs={md:v[0],al:v[1]};if(n)it.rel=n;it.rf=Date.now()}
+/* Ligne de diagnostic sous « chapitres sortis » : ce que chaque source a renvoyé, et quand */
+const srcV=x=>typeof x==='number'?(x?x+' ch.':'introuvable'):esc(x);
+const RP=new Set();   // mangas dont les sources sont en cours d'interrogation
+function relSrc(it){if(it.tot)return'Source : AniList (série terminée).';if(RP.has(it.k))return'Recherche des chapitres sortis…';const r=it.rs;if(!r)return`Sources pas encore vérifiées. <button class=rfb data-a=relr>Vérifier</button>`;
+ const md=+r.md>=+r.al&&+r.md,B=(on,t)=>on?`<b>${t} ✓</b>`:t;
+ return`${B(md,'MangaDex : '+srcV(r.md))} · ${B(!md&&+r.al,'Lecteurs AniList : '+srcV(r.al))} · vérifié ${ago(it.rf)} <button class=rfb data-a=relr>Revérifier</button>`}
+const ago=t=>{const m=Math.round((Date.now()-t)/6e4);return m<1?'à l’instant':m<60?'il y a '+m+' min':m<1440?'il y a '+Math.round(m/60)+' h':'il y a '+Math.round(m/1440)+' j'};
 const unit=it=>it.ty==='M'?'chapitre':'épisode';
 /* Couleur de la barre : violet = œuvre terminée et tout validé ; vert = à jour sur une œuvre encore en cours */
 const barCls=(it,P)=>it.s==='done'||(P.pct>=100&&!P.open&&(it.st==='fin'||it.st==='stop'))?' fn':P.pct>=100&&!P.open?' dn':'';
@@ -389,13 +413,27 @@ function prog(it){const L=eps(it),w=seenSet(it);let seen=0,left=0,next=null;
  return{L,w,seen,left,next,total,open,pct:total?Math.min(100,Math.round(seen/total*100)):0}}
 const parseId=(it,v)=>it.src==='tm'?v:+v;
 
-function ensure(k){let it=S.items[k];if(it)return it;it=BR[k];if(!it)return null;
+let JUST=null;   // œuvre ajoutée à la liste par la coche en cours (l'annulation la retire)
+function ensure(k){let it=S.items[k];if(it)return it;it=BR[k];if(!it)return null;JUST=k;
  it.w=it.w||[];it.s='cur';it.a=Date.now();S.items[k]=it;delete S.del[k];return it}
-function commit(it,w){const L=eps(it),n0=(it.w||[]).length;it.w=L.filter(x=>w.has(x.id)).map(x=>x.id);if(it.w.length>n0)it.lw=Date.now();
+function commit(it,w,pw){const L=eps(it),n0=(it.w||[]).length,old={w:[...(pw||it.w||[])],s:it.s,lw:it.lw,neu:JUST===it.k};JUST=null;it.w=L.filter(x=>w.has(x.id)).map(x=>x.id);if(it.w.length>n0)it.lw=Date.now();
  const all=L.length&&L.every(x=>w.has(x.id));
  if(all&&(it.st==='fin'||it.st==='stop'))it.s='done';
  else if(it.w.length&&(it.s==='plan'||it.s==='done'||!it.s))it.s='cur';
- touch(it);render()}
+ touch(it);render();undoToast(it,old)}
+/* Bandeau « … marqué comme vu · Annuler » pendant 4 s après chaque changement de coches */
+let UNDO=null,UT=0;
+function undoToast(it,old){const nw=new Set(it.w),od=new Set(old.w),add=it.w.filter(x=>!od.has(x)),rem=old.w.filter(x=>!nw.has(x));if(!add.length&&!rem.length)return;
+ const L=eps(it),lab=id=>{const x=L.find(y=>y.id===id);return x?shortEp(it,x):''},u=unit(it);
+ const txt=add.length&&!rem.length?(add.length===1?lab(add[0])+' marqué comme vu':it.ty==='M'?'Lu jusqu’au chapitre '+maxSeen(it):add.length+' '+u+'s marqués comme vus')
+  :rem.length&&!add.length?(rem.length===1?lab(rem[0])+' décoché':rem.length+' '+u+'s décochés'):'Progression modifiée';
+ UNDO={k:it.k,old};let t=$('#toast');if(!t){t=document.createElement('div');t.id='toast';document.body.appendChild(t)}
+ t.innerHTML=`<span>${esc(txt)}</span><button data-a=undo>Annuler</button>`;t.classList.toggle('lo',!!VIEW||!!SUBV);t.classList.remove('out');void t.offsetWidth;t.classList.add('on');
+ clearTimeout(UT);UT=setTimeout(hideToast,4000)}
+function hideToast(){const t=$('#toast');clearTimeout(UT);UNDO=null;if(t&&t.classList.contains('on')){t.classList.replace('on','out');setTimeout(()=>t.classList.remove('out'),220)}}
+function undo(){if(!UNDO)return;const{k,old}=UNDO,it=S.items[k];hideToast();if(!it)return;
+ if(old.neu){delete S.items[k];BR[k]=Object.assign({},it,{w:[],s:undefined});S.dirty=1;persist();schedSync();return render()}
+ it.w=old.w;it.s=old.s;it.lw=old.lw;touch(it);render()}
 function tog(k,v){const it=ensure(k);if(!it)return;const id=parseId(it,v),w=seenSet(it);
  if(w.has(id)){w.delete(id);return commit(it,w)}
  const L=eps(it),i=L.findIndex(x=>x.id===id);if(i<0||!L[i].ok)return;
@@ -487,7 +525,18 @@ function initOpen(k){if(OPEN[k])return;const it=obj(k),P=prog(it),G=groups(it,P.
  const g=G.find(g=>P.next&&g.L.includes(P.next))||(P.seen?G[G.length-1]:G[0]);OPEN[k]=new Set([g.id])}
 function openDet(k){SCRS.push(scrollY);VIEW=k;if((obj(k)||{}).src==='tm')delete OPEN[k];initOpen(k);history.pushState({v:k,sub:SUBV},'');slide('fwd',()=>{render();scrollTo(0,0)});loadDet(k)}
 function openSub(t){SCRS.push(scrollY);SUBV=t;PF=PF0();history.pushState({sub:t},'');slide('fwd',()=>{render();scrollTo(0,0)})}
-addEventListener('popstate',e=>{const st=e.state||{},y=SCRS.pop()||0;const same=VIEW===(st.v||null)&&SUBV===(st.sub||null);F=null;VIEW=st.v||null;SUBV=st.sub||null;slide(same?'':'back',()=>{render();scrollTo(0,y)})});
+addEventListener('popstate',e=>{const st=e.state||{},y=SCRS.pop()||0;if(SWB){SWB=0;F=null;VIEW=st.v||null;SUBV=st.sub||null;render();scrollTo(0,y);const a=$('#app');a.classList.remove('vtl','vtr');void a.offsetWidth;a.classList.add('vtl');return setTimeout(()=>a.classList.remove('vtl'),360)}
+ hideToast();const same=VIEW===(st.v||null)&&SUBV===(st.sub||null);F=null;VIEW=st.v||null;SUBV=st.sub||null;slide(same?'':'back',()=>{render();scrollTo(0,y)})});
+/* Retour en glissant depuis le bord gauche (fiche et sous-pages) : la page suit le doigt, puis repart à droite ou revient */
+let SW=null,SWB=0;
+document.addEventListener('touchstart',e=>{SW=null;const t=e.touches[0];if(e.touches.length>1||t.clientX>24||!(VIEW||SUBV)||F)return;SW={x:t.clientX,y:t.clientY,dx:0,on:0,t:Date.now()}},{passive:true});
+document.addEventListener('touchmove',e=>{if(!SW)return;const t=e.touches[0],dx=t.clientX-SW.x,dy=t.clientY-SW.y;
+ if(!SW.on){if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)){SW=null;return}if(dx<8)return;SW.on=1;document.body.classList.add('swb')}
+ e.preventDefault();SW.dx=Math.max(0,dx);swSet(SW.dx)},{passive:false});
+function swSet(x,anim){const a=$('#app'),w=innerWidth;document.documentElement.style.setProperty('--sx',x+'px');a.classList.toggle('swa',!!anim);document.body.classList.toggle('swa',!!anim)}
+function swEnd(){if(!SW)return;const s=SW;SW=null;if(!s.on)return;const w=innerWidth,v=s.dx/Math.max(1,Date.now()-s.t),go=s.dx>w*.35||(v>.5&&s.dx>40);
+ swSet(go?w:0,1);setTimeout(()=>{document.body.classList.remove('swb');const a=$('#app');a.classList.remove('swa');document.body.classList.remove('swa');document.documentElement.style.removeProperty('--sx');if(go){SWB=1;history.back()}},240)}
+document.addEventListener('touchend',swEnd);document.addEventListener('touchcancel',swEnd);
 /* Transition d'écran façon Fitness Tracker : la page ouverte arrive par la droite, l'ancienne recule un peu ; au retour, l'inverse */
 function slide(k,upd){const h=document.documentElement,rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
  if(rm||!k)return upd();
@@ -657,7 +706,7 @@ function detView(){const it=obj(VIEW);if(!it)return'';const inl=!!S.items[it.k],
  ${inl||P.seen?`<div class=prg><div class="pb${barCls(it,P)}"><i style="width:${P.pct}%"></i></div><div><span>${P.open?(P.seen?'Lu jusqu’au chapitre '+maxSeen(it)+' · nombre de chapitres sortis inconnu':'Pas commencé'):P.seen+' / '+P.total+' '+u+'s'}</span><span>${P.open?'':P.pct+' %'}</span></div></div>`:''}
  ${o?(w=>`<div class=nxt>${SI('cal',22)}<div><b>${o.lab} · ${w.a}${w.b?' ('+w.b+')':''}</b>${o.est?'Estimation d’après le jour de sortie choisi':'Prochaine sortie'}</div></div>`)(when(o)):''}
  ${D&&D.desc?`<p class=desc data-a=desc>${esc(D.desc)}</p>`:''}
- ${it.ty==='M'?`<div class=box><label>J’en suis au chapitre…</label><div class=inl><input id=upto type=number inputmode=numeric min=0 placeholder="ex. 132" value="${maxSeen(it)||''}"><button data-a=upto>OK</button></div><p class=rel>${it.tot?it.tot+' chapitres au total.':it.rel||it.relm?'Environ '+released(it)+' chapitres sortis'+(!it.rel&&it.relm?' (valeur que tu as saisie).':'.'):'Nombre de chapitres sortis inconnu pour l’instant.'}</p>${it.tot||it.rel?'':`<label>Introuvable automatiquement : tu peux l’indiquer ici</label><div class=inl><input id=relm type=number inputmode=numeric min=0 placeholder="ex. 230" value="${it.relm||''}"><button data-a=relm>OK</button></div>`}</div>`:''}
+ ${it.ty==='M'?`<div class=box><label>J’en suis au chapitre…</label><div class=inl><input id=upto type=number inputmode=numeric min=0 placeholder="ex. 132" value="${maxSeen(it)||''}"><button data-a=upto>OK</button></div><p class=rel>${it.tot?it.tot+' chapitres au total.':it.rel||it.relm?'Environ '+released(it)+' chapitres sortis'+(!it.rel&&it.relm?' (valeur que tu as saisie).':'.'):'Nombre de chapitres sortis inconnu pour l’instant.'}</p><p class=rsrc>${relSrc(it)}</p>${it.tot||it.rel?'':`<label>Introuvable automatiquement : tu peux l’indiquer ici</label><div class=inl><input id=relm type=number inputmode=numeric min=0 placeholder="ex. 230" value="${it.relm||''}"><button data-a=relm>OK</button></div>`}</div>`:''}
  ${it.ty==='M'?'':`<h2>${it.src==='tm'&&G.length>1?'Saisons':'Épisodes'}</h2>
  ${D&&D.err?`<p class=err>${esc(D.err)}</p>`:''}${body||(D?`<div class=note>Aucun ${u} annoncé pour l’instant.</div>`:`<div class=empty>Chargement…</div>`)}`}
  ${D&&D.cast&&D.cast.length?`<h2>Acteurs</h2><div class="hs cast">${D.cast.map(c=>`<div class=ca><span class=ph2>${c.p?`<img src="${esc(c.p)}" alt="" loading=lazy>`:esc((c.n||'?').split(' ').map(w=>w[0]).slice(0,2).join(''))}</span><b>${esc(c.r||'—')}</b><small>${esc(c.n)}</small>${c.v?'<em>voix</em>':''}</div>`).join('')}</div>`:''}`}
@@ -703,7 +752,7 @@ function render(){const a=$('#app');
  if(VIEW)a.querySelectorAll('.er').forEach(r=>{const m=r.querySelector('.em'),b=r.querySelector('.tx b');if(m)m.hidden=b.scrollHeight<=b.clientHeight+1})}
 
 /* ============ Actions ============ */
-document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,d=b.dataset;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;JUST=null;const a=b.dataset.a,d=b.dataset;
  if(a==='fno'){if(e.target!==b)return;return closeF()}
  if(a==='tab'){TAB=d.t;render();scrollTo(0,0);if(TAB==='disc'&&!RES)search();if(TAB==='cal')refreshAll();return}
  if(a==='open')return openDet(d.k);
@@ -741,9 +790,11 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
  if(a==='grp'){const O=OPEN[VIEW]=OPEN[VIEW]||new Set();if(O.has(d.g))O.delete(d.g);else{O.add(d.g);if(it.src==='tm')loadSeason(VIEW,+d.g)}return render()}
  if(a==='gall'){const x=ensure(VIEW),P=prog(x),g=groups(x,P.L).find(g=>g.id===d.g),ok=g.L.filter(y=>y.ok),full=ok.every(y=>P.w.has(y.id));ok.forEach(y=>full?P.w.delete(y.id):P.w.add(y.id));return commit(x,P.w)}
  if(a==='more'){it.cnt=eps(it).length+25;if(S.items[VIEW])touch(it);return render()}
+ if(a==='undo')return undo();
+ if(a==='relr'){const x=obj(VIEW);if(!x)return;x.rs=null;x.rf=0;render();return estRel(x).then(()=>{if(S.items[x.k])persist();if(VIEW===x.k&&!F)render()})}
  if(a==='relm'){const x=ensure(VIEW),n=Math.max(0,Math.floor(+$('#relm').value||0));x.relm=n||undefined;touch(x);return render()}
  if(a==='upto'){const n=Math.max(0,Math.floor(+$('#upto').value||0)),x=ensure(VIEW);if(x.tot&&n>x.tot)return alertMsg('Cette œuvre compte '+x.tot+' chapitres.');
-  if(!x.tot)x.cnt=Math.max(x.cnt||0,n+1);const w=new Set();for(let i=1;i<=n;i++)w.add(i);delete OPEN[VIEW];x.w=[...w];commit(x,w);initOpen(VIEW);return render()}
+  if(!x.tot)x.cnt=Math.max(x.cnt||0,n+1);const w=new Set(),pw=[...(x.w||[])];for(let i=1;i<=n;i++)w.add(i);delete OPEN[VIEW];x.w=[...w];commit(x,w,pw);initOpen(VIEW);return render()}
  if(a==='split'){const x=ensure(VIEW),v=($('#split').value.match(/\d+/g)||[]).map(Number).filter(n=>n>0&&n<5000).slice(0,30);x.sp=v.length?v:undefined;delete OPEN[VIEW];touch(x);initOpen(VIEW);return render()}
  if(a==='day'){const x=ensure(VIEW),v=+d.v;x.day=x.day===v?null:v;touch(x);return render()}
  if(a==='sync'){setMsg('Synchronisation…');return sync(true)}

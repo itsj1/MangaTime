@@ -29,7 +29,7 @@ App personnelle (un seul utilisateur) de suivi de **mangas / manhwas / webtoons*
 
 - **TMDB** (clé API gratuite, saisie dans les réglages) : séries **et animés** — une seule fiche par œuvre, découpée en saisons ; saisons, épisodes (titres, vignettes, résumés), acteurs, genres, durées, prochain épisode.
 - **AniList** (GraphQL, sans clé) : mangas / manhwas / webtoons, et animés seulement en secours si aucune clé TMDB n'est saisie.
-- **Chapitres sortis d'un manga en cours** (AniList ne les donne pas) : MangaDex (`/manga?title=` puis `/aggregate`, fiche retrouvée via son lien AniList) + activité des lecteurs AniList ; on garde le max. Saisie manuelle seulement si rien n'est trouvé. Non vérifié en conditions réelles (CORS de MangaDex non confirmé).
+- **Chapitres sortis d'un manga en cours** (AniList ne les donne pas) : MangaDex (`/manga?title=` puis `/aggregate`, fiche retrouvée via son lien AniList) + activité des lecteurs AniList ; on garde le max. Saisie manuelle seulement si rien n'est trouvé. Résultat de chaque source gardé dans `it.rs` (`{md, al}` : nombre, 0 = introuvable, ou « bloqué » / « erreur N ») et affiché sous « chapitres sortis » sur la fiche, avec la source retenue en gras et un bouton Revérifier. CORS de MangaDex toujours non confirmé : regarder cette ligne sur le téléphone.
 - Mention TMDB obligatoire, présente en bas des réglages.
 
 ## Synchro entre appareils
@@ -50,6 +50,8 @@ Fichier `mangatime-data.json` dans un **dépôt GitHub privé**, via l'API Conte
 - Barres : jaune = en cours, **vert** = à jour sur une œuvre en cours, **violet clair** = œuvre terminée entièrement vue, orange = pas regardée depuis un moment.
 - Bouton rond pour cocher un épisode ; feuilles par le bas (glisser pour fermer, fermeture animée) ; réglages en cartes groupées comme Fitness Tracker ; engrenage en haut à droite.
 - Onglets : Discover · Home · Calendrier · Profil.
+- Bandeau « S2E5 marqué comme vu · Annuler » 4 s après chaque changement de coches (`commit()` → `undoToast()`, annule aussi l'ajout à la liste).
+- Retour en glissant depuis le bord gauche (24 px) sur la fiche et les sous-pages : la page suit le doigt, repart si > 35 % de l'écran ou geste rapide.
 - Transitions de page comme Fitness Tracker (`slide()`, View Transitions API, repli en animation de `#app`) : fiche et sous-pages (« Tout voir », « Détails ») arrivent par la droite, retour vers la droite.
 
 ## Façon de travailler

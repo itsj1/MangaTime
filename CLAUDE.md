@@ -22,6 +22,7 @@ App personnelle (un seul utilisateur) de suivi de **mangas / manhwas / webtoons*
   - `w` : épisodes/chapitres cochés (ids `"saison-épisode"` pour TMDB, nombres pour AniList).
   - `st` : statut de l'œuvre (`rel`, `soon`, `fin`, `stop`, `hia`). `nx` : prochain épisode annoncé. `la` : dernier épisode diffusé (TMDB).
   - `ss` (TMDB) : `[n° saison, nb d'épisodes, nom, n° du 1er épisode, chargé]` — certaines œuvres numérotent en continu (Hunter x Hunter : la saison 2 commence à l'épisode 27).
+  - `lk` / `lkn` : lien perso pour lire / regarder (adresse, nom facultatif), réglé depuis le menu ⋯ de la fiche ; bouton « Lire » / « Regarder » sous la barre d'avancement.
   - `rt` : durée moyenne d'un épisode (min). `rel` / `relm` : chapitres sortis d'un manga en cours (estimé / saisi). `u` (modifié), `a` (ajouté), `lw` (dernier épisode coché), `g` (genres).
 - `cfg` : clé TMDB, dépôt + fichier + jeton GitHub pour la synchro.
 
@@ -51,6 +52,7 @@ Fichier `mangatime-data.json` dans un **dépôt GitHub privé**, via l'API Conte
 - Bouton rond pour cocher un épisode ; feuilles par le bas (glisser pour fermer, fermeture animée) ; réglages en cartes groupées comme Fitness Tracker ; engrenage en haut à droite.
 - Onglets : Discover · Home · Calendrier · Profil.
 - Bandeau « S2E5 marqué comme vu · Annuler » 4 s après chaque changement de coches (`commit()` → `undoToast()`, annule aussi l'ajout à la liste).
+- Tirer vers le bas en haut de Home / Calendrier : actualise toutes les œuvres suivies (`refreshAll(true)`) et lance la synchro si elle est réglée (pastille `#ptr`).
 - Retour en glissant depuis le bord gauche (24 px) sur la fiche et les sous-pages : la page suit le doigt, repart si > 35 % de l'écran ou geste rapide.
 - Transitions de page comme Fitness Tracker (`slide()`, View Transitions API, repli en animation de `#app`) : fiche et sous-pages (« Tout voir », « Détails ») arrivent par la droite, retour vers la droite.
 

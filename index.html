@@ -215,6 +215,17 @@ body.swb.swa:before{transition:width .24s cubic-bezier(.3,.7,.2,1)}
 .hd h1{font-size:22px;margin:0 0 4px}
 .big{display:block;width:100%;padding:15px;border-radius:999px;background:var(--acc);color:var(--on);font-weight:700;font-size:17px;margin:16px 0 6px}
 .prg{margin:16px 0 4px}
+.lkb{display:flex;align-items:center;gap:12px;margin:14px 0 4px;padding:12px 14px;border-radius:16px;background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none}
+.lkb>svg:first-child{flex:none;width:40px;height:40px;padding:10px;border-radius:50%;background:var(--acc);color:var(--on);fill:currentColor}
+.lkb span{flex:1;min-width:0}.lkb b{display:block;font-size:16px}
+.lkb small{display:block;color:var(--mut);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lkb>svg:last-child{flex:none;color:var(--mut)}
+.orow.fld b small.opt{font-size:13px;font-weight:500;color:var(--mut);margin-left:6px}
+/* Tirer pour actualiser */
+#ptr{position:fixed;left:50%;top:calc(6px + env(safe-area-inset-top));z-index:20;width:40px;height:40px;margin-left:-20px;border-radius:50%;background:var(--card);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.25);display:grid;place-items:center;color:var(--act);transform:translateY(-70px);opacity:0;pointer-events:none}
+#ptr.go{transition:transform .25s cubic-bezier(.3,.7,.2,1),opacity .25s}
+#ptr.ld svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .prg .pb{height:8px;margin:0 0 6px}
 .prg div:last-child{display:flex;justify-content:space-between;font-size:13px;color:var(--mut)}
 .nxt{display:flex;gap:10px;align-items:center;background:var(--tint);color:var(--act);border-radius:14px;padding:12px;margin:12px 0;font-size:14px}
@@ -327,7 +338,9 @@ const BR={},DET={},OPEN={};          // œuvres vues en recherche, détails char
 const obj=k=>S.items[k]||BR[k];
 
 /* Icônes */
-const IC={search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',home:'<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>',list:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',back:'<path d="m15 5-7 7 7 7"/>',chev:'<path d="m9 5 7 7-7 7"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',sync:'<path d="M20 11a8 8 0 0 0-14.3-4.4L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.4l1.7-1.9"/><path d="M20 20v-4.5h-4.5"/>',down:'<path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>',upl:'<path d="M12 16V5"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',dots:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',plus:'<path d="M12 5v14M5 12h14"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',undo:'<path d="M4 8h10a6 6 0 0 1 0 12H8"/><path d="m8 4-4 4 4 4"/>',ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',mark:'<path d="M6 4h12v17l-6-4.5L6 21z"/>',tiles:'<rect x="4" y="4" width="4" height="6" rx="1"/><rect x="10" y="4" width="4" height="6" rx="1"/><rect x="16" y="4" width="4" height="6" rx="1"/><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="14" width="4" height="6" rx="1"/><rect x="16" y="14" width="4" height="6" rx="1"/>',rows:'<rect x="4" y="4" width="16" height="6" rx="1.5"/><rect x="4" y="14" width="16" height="6" rx="1.5"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',filt:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>'};
+const IC={play:'<path d="M8 5.5v13l10.5-6.5z"/>',link:'<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',home:'<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>',list:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',back:'<path d="m15 5-7 7 7 7"/>',chev:'<path d="m9 5 7 7-7 7"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',sync:'<path d="M20 11a8 8 0 0 0-14.3-4.4L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.4l1.7-1.9"/><path d="M20 20v-4.5h-4.5"/>',down:'<path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>',upl:'<path d="M12 16V5"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',dots:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',plus:'<path d="M12 5v14M5 12h14"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',undo:'<path d="M4 8h10a6 6 0 0 1 0 12H8"/><path d="m8 4-4 4 4 4"/>',ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',mark:'<path d="M6 4h12v17l-6-4.5L6 21z"/>',tiles:'<rect x="4" y="4" width="4" height="6" rx="1"/><rect x="10" y="4" width="4" height="6" rx="1"/><rect x="16" y="4" width="4" height="6" rx="1"/><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="14" width="4" height="6" rx="1"/><rect x="16" y="14" width="4" height="6" rx="1"/>',rows:'<rect x="4" y="4" width="16" height="6" rx="1.5"/><rect x="4" y="14" width="16" height="6" rx="1.5"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',filt:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>'};
+/* Nom affiché du lien perso : celui saisi, sinon le domaine (sans www.) */
+const lkName=it=>it.lkn||(()=>{try{return new URL(it.lk).hostname.replace(/^www\./,'')}catch{return it.lk}})();
 const SI=(n,z=22,w=2)=>`<svg width=${z} height=${z} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
 
 /* ============ Sources de données ============ */
@@ -527,6 +540,18 @@ function openDet(k){SCRS.push(scrollY);VIEW=k;if((obj(k)||{}).src==='tm')delete 
 function openSub(t){SCRS.push(scrollY);SUBV=t;PF=PF0();history.pushState({sub:t},'');slide('fwd',()=>{render();scrollTo(0,0)})}
 addEventListener('popstate',e=>{const st=e.state||{},y=SCRS.pop()||0;if(SWB){SWB=0;F=null;VIEW=st.v||null;SUBV=st.sub||null;render();scrollTo(0,y);const a=$('#app');a.classList.remove('vtl','vtr');void a.offsetWidth;a.classList.add('vtl');return setTimeout(()=>a.classList.remove('vtl'),360)}
  hideToast();const same=VIEW===(st.v||null)&&SUBV===(st.sub||null);F=null;VIEW=st.v||null;SUBV=st.sub||null;slide(same?'':'back',()=>{render();scrollTo(0,y)})});
+/* Tirer vers le bas en haut de Home ou du Calendrier : actualise les sorties (et synchronise si la synchro est réglée) */
+let PT=null,PTL=0;const PTH=70;
+function ptrEl(){let e=$('#ptr');if(!e){e=document.createElement('div');e.id='ptr';e.innerHTML=SI('sync',20,2.4);document.body.appendChild(e)}return e}
+document.addEventListener('touchstart',e=>{PT=null;if(PTL||VIEW||SUBV||F||!['home','cal'].includes(TAB)||scrollY>0||e.touches.length>1)return;const t=e.touches[0];PT={x:t.clientX,y:t.clientY,d:0,on:0}},{passive:true});
+document.addEventListener('touchmove',e=>{if(!PT)return;const t=e.touches[0],dy=t.clientY-PT.y,dx=t.clientX-PT.x;
+ if(!PT.on){if(Math.abs(dx)>Math.abs(dy)||dy<0||scrollY>0){if(Math.abs(dx)>10||dy<-10)PT=null;return}if(dy<8)return;PT.on=1}
+ e.preventDefault();PT.d=Math.min(140,dy*.55);const el=ptrEl();el.classList.remove('go');el.style.opacity=Math.min(1,PT.d/PTH);
+ el.style.transform=`translateY(${PT.d-50}px)`;el.firstChild.style.transform=`rotate(${PT.d*4}deg)`;el.style.color=PT.d>=PTH?'var(--act)':'var(--mut)'},{passive:false});
+document.addEventListener('touchend',async()=>{if(!PT)return;const p=PT;PT=null;if(!p.on)return;const el=ptrEl();el.classList.add('go');
+ if(p.d<PTH){el.style.transform='';el.style.opacity=0;return}
+ PTL=1;el.style.transform='translateY(14px)';el.style.color='var(--act)';el.firstChild.style.transform='';el.classList.add('ld');
+ try{await Promise.allSettled([refreshAll(true),S.cfg.repo&&S.cfg.token?sync():0])}finally{PTL=0;el.classList.remove('ld');el.style.transform='';el.style.opacity=0;if(!F)render()}});
 /* Retour en glissant depuis le bord gauche (fiche et sous-pages) : la page suit le doigt, puis repart à droite ou revient */
 let SW=null,SWB=0;
 document.addEventListener('touchstart',e=>{SW=null;const t=e.touches[0];if(e.touches.length>1||t.clientX>24||!(VIEW||SUBV)||F)return;SW={x:t.clientX,y:t.clientY,dx:0,on:0,t:Date.now()}},{passive:true});
@@ -704,6 +729,7 @@ function detView(){const it=obj(VIEW);if(!it)return'';const inl=!!S.items[it.k],
  <div class=hd><div class=po>${img(it)}</div><div><h1>${esc(it.t)}</h1><div class=mut>${[it.lb,it.yr||'',STL[it.st]||''].filter(Boolean).join(' · ')}</div>${it.g&&it.g.length?`<div class=gen>${it.g.map(esc).join(' · ')}</div>`:''}</div></div>
  ${inl?chips(UST,it.s,'us'):`<button class=big data-a=add>+ Ajouter à ma liste</button>`}
  ${inl||P.seen?`<div class=prg><div class="pb${barCls(it,P)}"><i style="width:${P.pct}%"></i></div><div><span>${P.open?(P.seen?'Lu jusqu’au chapitre '+maxSeen(it)+' · nombre de chapitres sortis inconnu':'Pas commencé'):P.seen+' / '+P.total+' '+u+'s'}</span><span>${P.open?'':P.pct+' %'}</span></div></div>`:''}
+ ${it.lk?`<a class=lkb href="${esc(it.lk)}" target=_blank rel=noopener>${SI('play',20)}<span><b>${it.ty==='M'?'Lire':'Regarder'}</b><small>${esc(lkName(it))}</small></span>${SI('ext',18)}</a>`:''}
  ${o?(w=>`<div class=nxt>${SI('cal',22)}<div><b>${o.lab} · ${w.a}${w.b?' ('+w.b+')':''}</b>${o.est?'Estimation d’après le jour de sortie choisi':'Prochaine sortie'}</div></div>`)(when(o)):''}
  ${D&&D.desc?`<p class=desc data-a=desc>${esc(D.desc)}</p>`:''}
  ${it.ty==='M'?`<div class=box><label>J’en suis au chapitre…</label><div class=inl><input id=upto type=number inputmode=numeric min=0 placeholder="ex. 132" value="${maxSeen(it)||''}"><button data-a=upto>OK</button></div><p class=rel>${it.tot?it.tot+' chapitres au total.':it.rel||it.relm?'Environ '+released(it)+' chapitres sortis'+(!it.rel&&it.relm?' (valeur que tu as saisie).':'.'):'Nombre de chapitres sortis inconnu pour l’instant.'}</p><p class=rsrc>${relSrc(it)}</p>${it.tot||it.rel?'':`<label>Introuvable automatiquement : tu peux l’indiquer ici</label><div class=inl><input id=relm type=number inputmode=numeric min=0 placeholder="ex. 230" value="${it.relm||''}"><button data-a=relm>OK</button></div>`}</div>`:''}
@@ -723,6 +749,7 @@ function overlay(){const f=F;if(!f)return'';
   ${inl&&it.s==='plan'?'':M('mlater','mark','À voir plus tard','Range l’œuvre dans ta rangée « À voir plus tard ».')}
   ${ok&&P.left&&!P.open?M('mall','check','Tout marquer comme vu',pl(ok,u)+' '+(ok>1?'sortis':'sorti')):''}
   ${P.seen?M('mzero','undo','Remettre à zéro','Décoche tous les '+u+'s.'):''}
+  ${M('lnk','link',it.lk?'Modifier le lien':'Ajouter un site / lien',it.lk?esc(lkName(it)):'Ton site pour '+(it.ty==='M'?'lire':'regarder')+' (Crunchyroll, MangaPlus…).')}
   ${M('ext','ext','Voir sur '+(it.src==='tm'?'TMDB':'AniList'),'Ouvre la page de l’œuvre.')}
   ${inl?M('rm','trash','Retirer de ma liste','Efface aussi ta progression.','red'):''}</div></div>`}
  if(f.k==='pf'){const G=[...new Set(secItems(SUBV).flatMap(x=>x.g||[]))].sort((a,b)=>a.localeCompare(b,'fr')),
@@ -735,6 +762,10 @@ function overlay(){const f=F;if(!f)return'';
   <button class=dbt data-a=pfr style="margin-top:22px">Réinitialiser</button><button class="dbt gr" data-a=pfc>Voir les résultats</button></div></div>`}
  if(f.k==='pm'){const m=S.pm||'g3';return`<div class=sov data-a=fno><div class="sheet cfg"><div class=grab></div><h2>Affichage</h2>
   ${PMODE.map(([v,l])=>`<button class="mi cp${m===v?' cur':''}" data-a=pm data-v=${v}><i>${SI(v==='list'?'list':v==='det'?'rows':'tiles',22)}</i><span><b>${l}</b><small>${v==='list'?'Une ligne compacte par œuvre.':v==='det'?'Genres, statut, avancement et prochaine sortie.':''}</small></span>${m===v?SI('check',20,3):''}</button>`).join('')}</div></div>`}
+ if(f.k==='lnk'){const it=obj(f.key);return`<div class=sov data-a=fno><div class="sheet cfg"><div class=grab></div><h2>Lien pour ${it.ty==='M'?'lire':'regarder'}</h2>
+  <div class=ocard><div class="orow fld"><b>Adresse</b><input class=soft id=lku type=url inputmode=url placeholder="https://…" value="${esc(it.lk||'')}" autocomplete=off autocapitalize=off spellcheck=false></div>
+  <div class="orow fld"><b>Nom <small class=opt>facultatif</small></b><input class=soft id=lkn placeholder="ex. Crunchyroll" value="${esc(it.lkn||'')}" autocomplete=off></div></div>
+  <button class="dbt gr" data-a=lksave>Enregistrer</button>${it.lk?`<button class="dbt red" data-a=lkdel>Supprimer le lien</button>`:''}</div></div>`}
  if(f.k==='cfg'){const c=S.cfg,fld=(k,l,ph,t)=>`<div class="orow fld"><b>${l}</b><input class=soft data-cfg=${k} placeholder="${ph}" value="${esc(c[k])}" ${t||''} autocomplete=off autocapitalize=off spellcheck=false></div>`,
    MI=(a,i,t,sub,x)=>`<button class="mi${x?' gr':''}" data-a=${a}><i>${SI(i,24)}</i><span><b>${t}</b><small${a==='sync'?' id=msg':''}>${sub}</small></span></button>`;
   return`<div class=sov data-a=fno><div class="sheet cfg"><div class=grab></div><h2>Réglages</h2>
@@ -782,6 +813,12 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
  if(a==='madd'){const x=ensure(VIEW);F=null;touch(x);return render()}
  if(a==='mall'){const x=ensure(VIEW),w=seenSet(x);eps(x).forEach(y=>y.ok&&w.add(y.id));F=null;return commit(x,w)}
  if(a==='mzero'){F=null;return commit(it,new Set())}
+ if(a==='lnk'){F={k:'lnk',key:VIEW};render();return setTimeout(()=>{const i=$('#lku');if(i&&!i.value)i.focus()},300)}
+ if(a==='lksave'){let u=($('#lku').value||'').trim();const n=($('#lkn').value||'').trim().slice(0,40);
+  if(u&&!/^https?:\/\//i.test(u))u='https://'+u;
+  if(u){try{new URL(u)}catch{return alertMsg('Cette adresse ne semble pas valide.')}}
+  const x=ensure(VIEW);x.lk=u||undefined;x.lkn=u&&n||undefined;touch(x);F=null;return render()}
+ if(a==='lkdel'){const x=S.items[VIEW];if(x){delete x.lk;delete x.lkn;touch(x)}F=null;return render()}
  if(a==='mlater'){const x=ensure(VIEW);x.s='plan';F=null;touch(x);return render()}
  if(a==='ext'){F=null;render();return window.open(it.src==='tm'?'https://www.themoviedb.org/tv/'+it.id:'https://anilist.co/'+(it.ty==='M'?'manga':'anime')+'/'+it.id,'_blank','noopener')}
  if(a==='rm'){F={k:'rm',key:VIEW};return render()}

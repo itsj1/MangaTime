@@ -140,6 +140,20 @@ header.sh{justify-content:flex-start;gap:12px}
 .hs.hn .nr .tx b{font-size:16px}
 .hs.hn .grid{display:contents}
 .hs.hn .pc{flex:none;width:calc((100% - 20px)/3.3);scroll-snap-align:start}
+/* Transitions de page (View Transitions, sinon animation de #app) */
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html[data-vt=fwd]::view-transition-old(root){animation:vtOutL .32s cubic-bezier(.3,.7,.2,1) both}
+html[data-vt=fwd]::view-transition-new(root){animation:vtInR .32s cubic-bezier(.3,.7,.2,1) both;z-index:2}
+html[data-vt=back]::view-transition-old(root){animation:vtOutR .32s cubic-bezier(.3,.7,.2,1) both;z-index:2}
+html[data-vt=back]::view-transition-new(root){animation:vtInL .32s cubic-bezier(.3,.7,.2,1) both}
+@keyframes vtInR{from{transform:translateX(100%)}to{transform:none}}
+@keyframes vtOutL{from{transform:none}to{transform:translateX(-28%)}}
+@keyframes vtOutR{from{transform:none}to{transform:translateX(100%)}}
+@keyframes vtInL{from{transform:translateX(-28%)}to{transform:none}}
+@keyframes vtFR{from{transform:translateX(100%)}to{transform:none}}
+@keyframes vtFL{from{transform:translateX(-28%)}to{transform:none}}
+#app.vtr{animation:vtFR .34s cubic-bezier(.3,.7,.2,1)}#app.vtl{animation:vtFL .34s cubic-bezier(.3,.7,.2,1)}
+body:has(#app.vtl),body:has(#app.vtr){overflow-x:hidden}
 .hv{width:40px;height:40px;display:grid;place-items:center;color:var(--ink)}
 .nr{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .nr .th{flex:none;width:84px;aspect-ratio:2/3;border-radius:8px;overflow:hidden;background:var(--card);border:1px solid var(--line)}
@@ -471,9 +485,14 @@ function groups(it,L){
 function initOpen(k){if(OPEN[k])return;const it=obj(k),P=prog(it),G=groups(it,P.L);if(!G.length)return;
  if(it.src==='tm'){OPEN[k]=new Set();return}                       // saisons repliées par défaut, on ouvre celle qu'on veut
  const g=G.find(g=>P.next&&g.L.includes(P.next))||(P.seen?G[G.length-1]:G[0]);OPEN[k]=new Set([g.id])}
-function openDet(k){SCRS.push(scrollY);VIEW=k;if((obj(k)||{}).src==='tm')delete OPEN[k];initOpen(k);history.pushState({v:k,sub:SUBV},'');render();scrollTo(0,0);loadDet(k)}
-function openSub(t){SCRS.push(scrollY);SUBV=t;PF=PF0();history.pushState({sub:t},'');render();scrollTo(0,0)}
-addEventListener('popstate',e=>{const st=e.state||{};F=null;VIEW=st.v||null;SUBV=st.sub||null;render();scrollTo(0,SCRS.pop()||0)});
+function openDet(k){SCRS.push(scrollY);VIEW=k;if((obj(k)||{}).src==='tm')delete OPEN[k];initOpen(k);history.pushState({v:k,sub:SUBV},'');slide('fwd',()=>{render();scrollTo(0,0)});loadDet(k)}
+function openSub(t){SCRS.push(scrollY);SUBV=t;PF=PF0();history.pushState({sub:t},'');slide('fwd',()=>{render();scrollTo(0,0)})}
+addEventListener('popstate',e=>{const st=e.state||{},y=SCRS.pop()||0;const same=VIEW===(st.v||null)&&SUBV===(st.sub||null);F=null;VIEW=st.v||null;SUBV=st.sub||null;slide(same?'':'back',()=>{render();scrollTo(0,y)})});
+/* Transition d'écran façon Fitness Tracker : la page ouverte arrive par la droite, l'ancienne recule un peu ; au retour, l'inverse */
+function slide(k,upd){const h=document.documentElement,rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ if(rm||!k)return upd();
+ if(document.startViewTransition){h.dataset.vt=k;try{document.startViewTransition(upd).finished.finally(()=>{delete h.dataset.vt})}catch{delete h.dataset.vt;upd()}return}
+ upd();const a=$('#app');a.classList.remove('vtl','vtr');void a.offsetWidth;a.classList.add(k==='fwd'?'vtr':'vtl');setTimeout(()=>a.classList.remove('vtl','vtr'),360)}
 
 /* ============ Vues ============ */
 const img=(it,cls)=>it.p?`<img src="${esc(it.p)}" alt="" loading=lazy>`:`<span class=ph>${esc(it.t)}</span>`;

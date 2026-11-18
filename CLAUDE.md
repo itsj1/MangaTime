@@ -40,7 +40,7 @@ Fichier `mangatime-data.json` dans un **dépôt GitHub privé**, via l'API Conte
 
 - **Discover** : recherche (croix pour effacer), filtres Animés / Mangas & Webtoons / Séries, posters 3 par ligne avec titre sur 2 lignes fixes + année.
 - **Fiche** : genres, statut de suivi, barre d'avancement, prochaine sortie, saisons **repliées par défaut** (vignette + titre sur 2 lignes, bouton ⋯ si coupé), acteurs (rangée défilante, étiquette « voix »), bouton ⋯ en haut (ajouter / retirer, à voir plus tard, tout marquer, remettre à zéro, page source). Coche d'un épisode avec dialogue « précédents aussi / seulement celui-ci / annuler ». Mangas : seulement « J'en suis au chapitre… » + chapitres sortis (pas de grille, pas de saisons, pas de jour de sortie).
-- **Home** : sections Séries / Animés / Mangas (liste ou grille, « Tout voir » au-delà de 5), œuvres en cours y compris « à jour » sur une œuvre pas finie ; puis Pas commencées, Pas regardées depuis un moment (30 j), À voir plus tard. Libellés : `S2E11 +3`, `Ch. 215 / 230`, `S1E12 · à jour`, `S2E11 · jeudi` (sur une ligne).
+- **Home** : sections Séries / Animés / Mangas (titre sans nombre, « Tout voir (N) » toujours présent), chacune en deux rangées défilant vers la droite : « En cours » puis « À jour » (œuvre pas finie, tout vu) ; liste = cartes, grille = affiches ; puis Pas commencées, Pas regardées depuis un moment (30 j), À voir plus tard. Libellés : `S2E11 +3`, `Ch. 215 / 230`, `S1E12 · à jour`, `S2E11 · jeudi` (sur une ligne).
 - **Calendrier** : « Sortis, à regarder » avec bulle pour valider (épisode suivant ou date du prochain ensuite), puis prochaines sorties jour par jour. Séries et animés uniquement.
 - **Profil** : stats (œuvres, temps passé, épisodes vus, chapitres lus) + « Détails » (page Statistiques par type) ; rangées Mes séries / Mes animés / Mes mangas. « Tout voir » ouvre une page catégorie : recherche, filtres et tri, affichage grille ×2 à ×5 / liste / détaillée, groupes Vu récemment · Pas regardé depuis un moment · À jour · Complété (toujours affichés, même à 0).
 
@@ -50,6 +50,7 @@ Fichier `mangatime-data.json` dans un **dépôt GitHub privé**, via l'API Conte
 - Barres : jaune = en cours, **vert** = à jour sur une œuvre en cours, **violet clair** = œuvre terminée entièrement vue, orange = pas regardée depuis un moment.
 - Bouton rond pour cocher un épisode ; feuilles par le bas (glisser pour fermer, fermeture animée) ; réglages en cartes groupées comme Fitness Tracker ; engrenage en haut à droite.
 - Onglets : Discover · Home · Calendrier · Profil.
+- Transitions de page comme Fitness Tracker (`slide()`, View Transitions API, repli en animation de `#app`) : fiche et sous-pages (« Tout voir », « Détails ») arrivent par la droite, retour vers la droite.
 
 ## Façon de travailler
 

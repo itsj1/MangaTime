@@ -132,6 +132,14 @@ header.sh{justify-content:flex-start;gap:12px}
 /* Home « Suivant » : liste ou grille */
 .hbt{display:flex;align-items:center;gap:6px}
 .h2r>small{font-weight:500;font-size:13px;color:var(--mut);margin:0}
+/* Home : rangées défilantes (en cours / à jour) */
+.hsl{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:4px 0 6px}
+.hs.hn{margin-bottom:8px}
+.hs.hn .nr{flex:none;width:86%;scroll-snap-align:start;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:10px 12px 10px 10px;gap:12px}
+.hs.hn .nr .th{width:68px}
+.hs.hn .nr .tx b{font-size:16px}
+.hs.hn .grid{display:contents}
+.hs.hn .pc{flex:none;width:calc((100% - 20px)/3.3);scroll-snap-align:start}
 .hv{width:40px;height:40px;display:grid;place-items:center;color:var(--ink)}
 .nr{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .nr .th{flex:none;width:84px;aspect-ratio:2/3;border-radius:8px;overflow:hidden;background:var(--card);border:1px solid var(--line)}
@@ -500,15 +508,18 @@ const nxLab=(it,P)=>{if(!P.next){const o=nextOut(it),l=[...P.L].reverse().find(x
   return o?`<strong>${o.lab.replace(' · ','').replace('Épisode ','Ép. ')}</strong><span> · ${when(o).a.toLowerCase()}</span>`:`<strong>${l?shortEp(it,l):''}</strong><span> · à jour</span>`}
  if(it.ty==='M')return`<strong>Ch. ${maxSeen(it)}</strong>${P.open?'':`<span> / ${P.total}</span>`}`;   // manga : où j'en suis, sur le nombre de chapitres sortis
  return`<strong>${it.src==='tm'?'S'+P.next.s+'E'+P.next.e:'Ép. '+P.next.e}</strong>${P.left>1?`<span> +${P.left-1}</span>`:''}`};
-function nextHTML(X){
+function nextHTML(X,row){
+ if(row)return`<div class="hs hn${S.hv==='g'?' g':''}">${nextHTML(X)}</div>`;
  if(S.hv==='g')return`<div class="grid ng">${X.map(({it,P})=>`<button class=pc data-a=open data-k="${it.k}"><div class=im>${img(it)}<span class="ob${P.next?'':' dn'}"><i style="width:${P.pct}%"></i></span></div><span class=nl>${nxLab(it,P)}</span></button>`).join('')}</div>`;
  return X.map(({it,P})=>`<div class=nr><button class=th data-a=open data-k="${it.k}">${img(it)}</button><button class=tx data-a=open data-k="${it.k}"><b>${esc(it.t)}</b><span class=nl>${nxLab(it,P)}</span><em>${P.open?'Total inconnu':P.seen+'/'+P.total}</em><span class="pb${P.next?'':' dn'}"><i style="width:${P.pct}%"></i></span></button>${P.next?`<button class=ck data-a=tg data-k="${it.k}" data-id="${P.next.id}" aria-label="Marquer comme vu">${SI('check',20,3)}</button>`:''}</div>`).join('')}
 const hvBtn=()=>`<button class=hv data-a=hv aria-label="Changer d’affichage">${SI(S.hv==='g'?'rows':'tiles',24)}</button>`;
 const mini=(l,X)=>X.length?`<h2>${l}<small>${X.length}</small></h2><div class="hs mix">${X.map(({it})=>card(it,'list')).join('')}</div>`:'';
 const HSEC=[['T','Séries'],['A','Animés'],['M','Mangas']];
-function homeView(){const all=Object.values(S.items),H=homeSets(),MAX=5;
+function homeView(){const all=Object.values(S.items),H=homeSets();
  if(!all.length)return`<header><h1>Home</h1>${gear}</header><div class=empty><b>Ta liste est vide</b>Cherche un manga, un animé ou une série dans Discover pour commencer à suivre ta progression.</div><button class=big data-a=tab data-t=disc>Découvrir des œuvres</button>`;
- const sec=HSEC.map(([t,l])=>{const X=H.next.filter(x=>x.it.ty===t);return X.length?`<h2 class=h2r><span>${l}<small>${X.length}</small></span>${X.length>MAX?`<button data-a=all data-v="next:${t}">Tout voir (${X.length})</button>`:''}</h2>${nextHTML(X.slice(0,MAX))}`:''}).join('');
+ /* Par type : 1re rangée = en cours (un épisode à voir), 2e rangée = à jour ; chaque rangée défile vers la droite */
+ const sec=HSEC.map(([t,l])=>{const X=H.next.filter(x=>x.it.ty===t);if(!X.length)return'';const C=X.filter(x=>x.P.next),U=X.filter(x=>!x.P.next);
+  return`<h2 class=h2r><span>${l}</span><button data-a=all data-v="next:${t}">Tout voir (${X.length})</button></h2>${C.length?`<div class=hsl>En cours</div>${nextHTML(C,1)}`:''}${U.length?`<div class=hsl>À jour</div>${nextHTML(U,1)}`:''}`}).join('');
  return`<header><h1>Home</h1><span class=hbt>${H.next.length?hvBtn():''}${gear}</span></header>
  ${sec||`<div class=note>${H.fresh.length||H.stale.length?'Rien en cours pour le moment.':'Tu es à jour partout. Les nouveaux épisodes apparaîtront ici dès leur sortie ; les dates sont dans l’onglet Calendrier.'}</div>`}
  ${mini('Pas commencées',H.fresh)}${mini('Pas regardées depuis un moment',H.stale)}${listRow(['plan','À voir plus tard'])}`}

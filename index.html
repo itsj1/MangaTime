@@ -346,8 +346,10 @@ const SI=(n,z=22,w=2)=>`<svg width=${z} height=${z} viewBox="0 0 24 24" fill="no
 
 /* ============ Sources de données ============ */
 const ALF='id type format status episodes chapters genres countryOfOrigin startDate{year} title{romaji english} coverImage{large} nextAiringEpisode{episode airingAt}';
+/* Délai maximum d'un appel réseau : une requête bloquée ne doit jamais figer l'app */
+const TO=(ms=15000)=>AbortSignal.timeout?AbortSignal.timeout(ms):undefined;
 async function al(query,variables){
- const r=await fetch('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({query,variables})});
+ const r=await fetch('https://graphql.anilist.co',{signal:TO(),method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({query,variables})});
  if(r.status===429)throw new Error('Trop de requêtes vers AniList, réessaie dans une minute.');
  const j=await r.json();if(j.errors)throw new Error('AniList : '+j.errors[0].message);return j.data}
 const GFR={Adventure:'Aventure',Comedy:'Comédie',Drama:'Drame',Fantasy:'Fantastique',Horror:'Horreur',Mystery:'Mystère','Sci-Fi':'Science-fiction','Slice of Life':'Tranche de vie',Sports:'Sport',Supernatural:'Surnaturel',Psychological:'Psychologique',Music:'Musique'};
@@ -359,7 +361,7 @@ function fromAL(m){const A=m.type==='ANIME',nx=m.nextAiringEpisode;
 async function tm(path,params){const key=(S.cfg.tmdb||'').trim();if(!key)throw new Error('NOKEY');
  const u=new URL('https://api.themoviedb.org/3/'+path);u.searchParams.set('language','fr-FR');for(const k in params||{})u.searchParams.set(k,params[k]);
  const h={Accept:'application/json'};if(key.length>60)h.Authorization='Bearer '+key;else u.searchParams.set('api_key',key);
- const r=await fetch(u,{headers:h});if(r.status===401)throw new Error('Clé TMDB refusée : vérifie-la dans les réglages.');if(!r.ok)throw new Error('TMDB '+r.status);return r.json()}
+ const r=await fetch(u,{headers:h,signal:TO()});if(r.status===401)throw new Error('Clé TMDB refusée : vérifie-la dans les réglages.');if(!r.ok)throw new Error('TMDB '+r.status);return r.json()}
 /* Animé = animation d'origine japonaise ; TMDB regroupe toutes les saisons dans une seule fiche */
 const isAni=r=>(r.genre_ids||(r.genres||[]).map(g=>g.id)).includes(16)&&r.original_language==='ja';
 const TG={10759:'Action & Aventure',35:'Comédie',80:'Crime',99:'Documentaire',18:'Drame',10751:'Familial',10762:'Jeunesse',9648:'Mystère',10764:'Téléréalité',10765:'Science-fiction & Fantastique',10766:'Feuilleton',10768:'Guerre & Politique',37:'Western'};
@@ -397,7 +399,7 @@ const released=it=>it.tot||it.rel||it.relm||0;
    1. MangaDex : la liste réelle des chapitres publiés (la fiche est retrouvée grâce à son identifiant AniList) ;
    2. l'activité des lecteurs AniList (« a lu le chapitre N ») : 2e valeur la plus haute, pour écarter une saisie isolée. */
 /* Chaque source renvoie un nombre (0 = introuvable) ou lève une erreur explicite ; le détail est gardé dans it.rs pour la fiche */
-const xf=async u=>{let r;try{r=await fetch(u)}catch{throw new Error('bloqué')}if(!r.ok)throw new Error('erreur '+r.status);return r.json()};
+const xf=async u=>{let r;try{r=await fetch(u,{signal:TO(12000)})}catch{throw new Error('bloqué')}if(!r.ok)throw new Error('erreur '+r.status);return r.json()};
 async function relMD(it){
  const r=await xf('https://api.mangadex.org/manga?limit=10&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&title='+encodeURIComponent(it.t));
  const m=(r.data||[]).find(x=>String(((x.attributes||{}).links||{}).al||'')===String(it.id));if(!m)return 0;
@@ -470,14 +472,16 @@ const STL={fin:'Terminé',rel:'En cours de sortie',soon:'Pas encore sorti',stop:
 const UST=[['cur','En cours'],['plan','À voir plus tard'],['done','Terminé'],['pause','En pause'],['drop','Abandonné']];
 
 /* Rafraîchit les dates des œuvres suivies (au lancement, toutes les 6 h au plus) */
+/* Lance f sur chaque élément, n à la fois */
+async function pool(L,n,f){let i=0;await Promise.all(Array.from({length:Math.min(n,L.length)},async()=>{while(i<L.length)await f(L[i++])}))}
 async function refreshAll(force,only){
  const need=it=>['cur','plan','pause'].includes(it.s)&&(force||Date.now()-(it.nf||0)>6*3600e3||(it.nx&&it.nx.at<Date.now()&&Date.now()-(it.nf||0)>1800e3));
  const L=only||Object.values(S.items).filter(need).concat(Object.values(S.items).filter(it=>!need(it)&&!it.g).slice(0,12));if(!L.length)return;   // + rattrapage des genres manquants
  const A=L.filter(x=>x.src==='al');
  try{for(let i=0;i<A.length;i+=50){const d=await al(`query($ids:[Int]){Page(perPage:50){media(id_in:$ids){${ALF}}}}`,{ids:A.slice(i,i+50).map(x=>x.id)});
   d.Page.media.forEach(m=>{const it=S.items['al:'+m.id];if(it){meta(it,fromAL(m));it.nf=Date.now()}})}
-  for(const it of A.filter(x=>x.ty==='M'&&!x.tot&&x.s==='cur').slice(0,8))await estRel(it)}catch{}
- if(S.cfg.tmdb)for(const it of L.filter(x=>x.src==='tm')){try{applyTM(it,await tm('tv/'+it.id));it.nf=Date.now()}catch{}}
+  await Promise.allSettled(A.filter(x=>x.ty==='M'&&!x.tot&&x.s==='cur').slice(0,8).map(estRel))}catch{}
+ if(S.cfg.tmdb)await pool(L.filter(x=>x.src==='tm'),6,async it=>{try{applyTM(it,await tm('tv/'+it.id));it.nf=Date.now()}catch{}})
  persist();if(!F)render()}
 
 /* ============ Recherche ============ */
@@ -554,7 +558,7 @@ document.addEventListener('touchmove',e=>{if(!PT)return;const t=e.touches[0],dy=
 document.addEventListener('touchend',async()=>{if(!PT)return;const p=PT;PT=null;if(!p.on)return;const el=ptrEl();el.classList.add('go');
  if(p.d<PTH){el.style.transform='';el.style.opacity=0;return}
  PTL=1;el.style.transform='translateY(14px)';el.style.color='var(--act)';el.firstChild.style.transform='';el.classList.add('ld');
- try{await Promise.allSettled([refreshAll(true),S.cfg.repo&&S.cfg.token?sync():0])}finally{PTL=0;el.classList.remove('ld');el.style.transform='';el.style.opacity=0;if(!F)render()}});
+ try{await Promise.race([Promise.allSettled([refreshAll(true),S.cfg.repo&&S.cfg.token?sync():0]),new Promise(r=>setTimeout(r,12000))])}finally{PTL=0;el.classList.remove('ld');el.style.transform='';el.style.opacity=0;if(!F)render()}});
 /* Retour en glissant depuis le bord gauche (fiche et sous-pages) : la page suit le doigt, puis repart à droite ou revient */
 let SW=null,SWB=0;
 document.addEventListener('touchstart',e=>{SW=null;const t=e.touches[0];if(e.touches.length>1||t.clientX>24||!(VIEW||SUBV)||F)return;SW={x:t.clientX,y:t.clientY,dx:0,on:0,t:Date.now()}},{passive:true});
@@ -865,11 +869,11 @@ document.addEventListener('touchend',()=>{const d=DR;DR=null;if(!d||!d.dy)return
 /* ============ Synchro GitHub (même principe que Muscu) ============ */
 const api=()=>`https://api.github.com/repos/${S.cfg.repo}/contents/${S.cfg.path||'mangatime-data.json'}`;
 const H=()=>({Authorization:'Bearer '+S.cfg.token,Accept:'application/vnd.github+json'});
-async function pull(){const r=await fetch(api(),{headers:H(),cache:'no-store'});if(r.status===404){S.sha='';return null}
+async function pull(){const r=await fetch(api(),{headers:H(),cache:'no-store',signal:TO()});if(r.status===404){S.sha='';return null}
  if(!r.ok)throw new Error('GitHub '+r.status);const j=await r.json();S.sha=j.sha;
  return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(j.content.replace(/\n/g,'')),c=>c.charCodeAt(0))))}
 async function push(){let b='';new TextEncoder().encode(JSON.stringify({items:S.items,del:S.del})).forEach(c=>b+=String.fromCharCode(c));
- const r=await fetch(api(),{method:'PUT',headers:H(),body:JSON.stringify({message:'Sync '+new Date().toISOString(),content:btoa(b),sha:S.sha||undefined})});
+ const r=await fetch(api(),{method:'PUT',signal:TO(),headers:H(),body:JSON.stringify({message:'Sync '+new Date().toISOString(),content:btoa(b),sha:S.sha||undefined})});
  if(!r.ok)throw new Error('GitHub '+r.status);S.sha=(await r.json()).content.sha}
 /* Fusion : pour chaque œuvre on garde la version modifiée le plus récemment ; les suppressions sont datées */
 function merge(rm){let newer=false;const ri=rm.items||{},rd=rm.del||{};

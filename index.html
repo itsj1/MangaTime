@@ -520,7 +520,10 @@ async function catFetch(t,o,page){page=page||1;const yr=yrRange(o.y);
   st:o.st==='rel'?'RELEASING':o.st==='fin'?'FINISHED':null,pg:o.sort==='to'?3000:o.sort==='nw'?200:null,a:null,b:null};
  if(yr){v.a=yr[0]?(yr[0]-1)*10000+1231:null;v.b=(yr[1]+1)*10000}
  else if(o.sort==='nw'){const d=new Date(Date.now()-365*DAY);v.a=+ymd(d).replace(/-/g,'');v.b=+ymd(new Date()).replace(/-/g,'')+1}
- const d=await al(`query($p:Int,$t:MediaType,$s:[MediaSort],$g:String,$c:CountryCode,$st:MediaStatus,$pg:Int,$a:FuzzyDateInt,$b:FuzzyDateInt){Page(page:$p,perPage:30){pageInfo{hasNextPage}media(type:$t,sort:$s,genre:$g,countryOfOrigin:$c,status:$st,popularity_greater:$pg,startDate_greater:$a,startDate_lesser:$b,isAdult:false){${ALF}}}}`,v);
+ /* AniList refuse certains filtres envoyés à null (« Illegal operator and value combination ») : on ne déclare que ceux qui sont choisis */
+ const AF={p:['Int',null],t:['MediaType',null],s:['[MediaSort]','sort'],g:['String','genre'],c:['CountryCode','countryOfOrigin'],st:['MediaStatus','status'],pg:['Int','popularity_greater'],a:['FuzzyDateInt','startDate_greater'],b:['FuzzyDateInt','startDate_lesser']};
+ const K=Object.keys(AF).filter(k=>v[k]!==null&&v[k]!==undefined),vv=Object.fromEntries(K.map(k=>[k,v[k]]));
+ const d=await al(`query(${K.map(k=>'$'+k+':'+AF[k][0]).join(',')}){Page(page:$p,perPage:30){pageInfo{hasNextPage}media(type:$t,${K.filter(k=>AF[k][1]).map(k=>AF[k][1]+':$'+k).join(',')},isAdult:false){${ALF}}}}`,vv);
  return{L:d.Page.media.map(fromAL).map(reg),more:!!d.Page.pageInfo.hasNextPage}}
 /* Accueil de Discover (sans recherche) : 4 rangées par type, gardées en mémoire */
 const DRW={};

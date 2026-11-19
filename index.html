@@ -36,6 +36,15 @@ input:focus{border-color:var(--acc)}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;padding:8px 14px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:14px;white-space:nowrap}
 .chip.on{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:700}
+.chips.el{transition:transform .5s cubic-bezier(.2,1.25,.4,1)}.chips.dg{transition:none}
+/* Discover : rangées du catalogue, page Explorer */
+.hs.dr .pc{width:calc((100% - 20px)/3.25)}
+.big.exb{display:flex;align-items:center;justify-content:center;gap:8px;margin:26px 0 8px}
+.exf{display:flex;align-items:center;margin:0 -12px}
+.exf .exl{flex:none;width:74px;padding-left:12px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)}
+.exf .chips{flex:1;min-width:0;margin:5px 0;padding-left:0}
+.exf .chip{padding:6px 12px;font-size:13px}
+.exm{display:block;margin:6px auto 20px;padding:10px 22px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-weight:600;color:var(--mut)}
 
 /* Recherche */
 .srch{position:relative;margin:4px 0 2px}
@@ -486,7 +495,42 @@ async function refreshAll(force,only){
 
 /* ============ Recherche ============ */
 let ST=0,SEQ=0;
+/* Œuvre vue dans Discover : on réutilise la version de ma liste si je la suis déjà */
+const reg=x=>{if(S.items[x.k])return S.items[x.k];BR[x.k]=Object.assign(BR[x.k]||{},x);return BR[x.k]};
+/* ---- Catalogue (rangées de Discover et page Explorer) ----
+   o = {sort:'tr'|'po'|'to'|'nw', g:genre, y:année ('2024', '2000s', 'old'), c:pays / origine, st:'rel'|'fin'} */
+const EXS=[['tr','Tendances'],['po','Populaires'],['to','Mieux notés'],['nw','Nouveautés']];
+const ALG=['Action','Adventure','Comedy','Drama','Fantasy','Horror','Mecha','Music','Mystery','Psychological','Romance','Sci-Fi','Slice of Life','Sports','Supernatural','Thriller'];
+const EXC={M:[['JP','Manga'],['KR','Manhwa'],['CN','Manhua']],T:[['US','États-Unis'],['FR','France'],['GB','Royaume-Uni'],['KR','Corée'],['ES','Espagne'],['DE','Allemagne'],['JP','Japon']]};
+const ymd=d=>d.toISOString().slice(0,10);
+const yrRange=y=>!y?null:y==='old'?[0,1989]:/s$/.test(y)?[+y.slice(0,4),+y.slice(0,4)+9]:[+y,+y];
+const useTM=t=>t==='T'||(t==='A'&&!!S.cfg.tmdb);
+async function catFetch(t,o,page){page=page||1;const yr=yrRange(o.y);
+ if(useTM(t)){const A=t==='A',q={page,'vote_count.gte':o.sort==='to'?(A?150:300):o.sort==='po'?0:5};
+  if(A){q.with_genres=o.g?'16,'+o.g:'16';q.with_original_language='ja'}else if(o.g)q.with_genres=o.g;
+  if(!A&&o.c)q.with_origin_country=o.c;
+  if(o.st)q.with_status=o.st==='rel'?'0':'3|4';
+  if(yr){q['first_air_date.gte']=(yr[0]||1900)+'-01-01';q['first_air_date.lte']=yr[1]+'-12-31'}
+  q.sort_by={tr:'popularity.desc',po:'vote_count.desc',to:'vote_average.desc',nw:'popularity.desc'}[o.sort];
+  if(o.sort==='nw'&&!yr){q['first_air_date.gte']=ymd(new Date(Date.now()-365*DAY));q['first_air_date.lte']=ymd(new Date())}
+  const plain=!A&&o.sort==='tr'&&!o.g&&!o.c&&!o.st&&!yr;   // tendances de la semaine, sans filtre
+  const d=plain?await tm('trending/tv/week',{page}):await tm('discover/tv',q);
+  return{L:d.results.map(fromTM).filter(x=>(x.ty==='A')===A).map(reg),more:page<Math.min(d.total_pages||1,500)}}
+ const v={p:page,t:t==='A'?'ANIME':'MANGA',s:[{tr:'TRENDING_DESC',po:'POPULARITY_DESC',to:'SCORE_DESC',nw:'POPULARITY_DESC'}[o.sort]],g:o.g||null,c:o.c||null,
+  st:o.st==='rel'?'RELEASING':o.st==='fin'?'FINISHED':null,pg:o.sort==='to'?3000:o.sort==='nw'?200:null,a:null,b:null};
+ if(yr){v.a=yr[0]?(yr[0]-1)*10000+1231:null;v.b=(yr[1]+1)*10000}
+ else if(o.sort==='nw'){const d=new Date(Date.now()-365*DAY);v.a=+ymd(d).replace(/-/g,'');v.b=+ymd(new Date()).replace(/-/g,'')+1}
+ const d=await al(`query($p:Int,$t:MediaType,$s:[MediaSort],$g:String,$c:CountryCode,$st:MediaStatus,$pg:Int,$a:FuzzyDateInt,$b:FuzzyDateInt){Page(page:$p,perPage:30){pageInfo{hasNextPage}media(type:$t,sort:$s,genre:$g,countryOfOrigin:$c,status:$st,popularity_greater:$pg,startDate_greater:$a,startDate_lesser:$b,isAdult:false){${ALF}}}}`,v);
+ return{L:d.Page.media.map(fromAL).map(reg),more:!!d.Page.pageInfo.hasNextPage}}
+/* Accueil de Discover (sans recherche) : 4 rangées par type, gardées en mémoire */
+const DRW={};
+async function loadRows(t){const seq=SEQ;
+ const R=await Promise.allSettled(EXS.map(([k])=>catFetch(t,{sort:k}).then(r=>r.L)));
+ if(seq!==SEQ)return;const ok=R.filter(x=>x.status==='fulfilled');
+ if(!ok.length)throw R[0].reason;DRW[t]=Object.fromEntries(EXS.map(([k],i)=>[k,R[i].status==='fulfilled'?R[i].value:[]]))}
 async function search(){const seq=++SEQ;BUSY=true;RERR='';paintRes();
+ if(!Q){try{if(!DRW[DT])await loadRows(DT)}catch(e){if(seq===SEQ)RERR=e.message==='NOKEY'?'NOKEY':(navigator.onLine===false?'Pas de connexion internet.':e.message)}
+  if(seq===SEQ){RES=[];BUSY=false;paintRes()}return}
  try{let L;
   if(DT==='T'||(DT==='A'&&S.cfg.tmdb)){const A=DT==='A';
    const d=Q?await tm('search/tv',{query:Q}):A?await tm('discover/tv',{with_genres:16,with_original_language:'ja',sort_by:'popularity.desc'}):await tm('trending/tv/week');
@@ -559,6 +603,19 @@ document.addEventListener('touchend',async()=>{if(!PT)return;const p=PT;PT=null;
  if(p.d<PTH){el.style.transform='';el.style.opacity=0;return}
  PTL=1;el.style.transform='translateY(14px)';el.style.color='var(--act)';el.firstChild.style.transform='';el.classList.add('ld');
  try{await Promise.race([Promise.allSettled([refreshAll(true),S.cfg.repo&&S.cfg.token?sync():0]),new Promise(r=>setTimeout(r,12000))])}finally{PTL=0;el.classList.remove('ld');el.style.transform='';el.style.opacity=0;if(!F)render()}});
+/* Rangées de bulles élastiques : si elles tiennent dans l'écran, on peut quand même les tirer à gauche ou à droite,
+   elles suivent le doigt avec résistance puis reviennent en place (si elles débordent, le défilement natif s'en charge) */
+let CE=null,CEX=0;
+document.addEventListener('touchstart',e=>{CE=null;const el=e.target.closest('.chips');if(!el||e.touches.length>1)return;const t=e.touches[0];
+ if((VIEW||SUBV)&&t.clientX<=24)return;                  // laissé au retour en glissant
+ if(el.scrollWidth-el.clientWidth>1)return;
+ CE={el,x:t.clientX,y:t.clientY,on:0}},{passive:true});
+document.addEventListener('touchmove',e=>{if(!CE)return;const t=e.touches[0],dx=t.clientX-CE.x,dy=t.clientY-CE.y;
+ if(!CE.on){if(Math.abs(dy)>8&&Math.abs(dy)>Math.abs(dx)){CE=null;return}if(Math.abs(dx)<6)return;CE.on=1;CE.el.classList.add('el','dg')}
+ e.preventDefault();const r=dx*.7/(1+Math.abs(dx)/320);CE.el.style.transform=`translateX(${r}px)`},{passive:false});
+function ceEnd(){if(!CE)return;const c=CE;CE=null;if(!c.on)return;CEX=Date.now();c.el.classList.remove('dg');c.el.style.transform='';setTimeout(()=>c.el.classList.remove('el'),520)}
+document.addEventListener('touchend',ceEnd);document.addEventListener('touchcancel',ceEnd);
+document.addEventListener('click',e=>{if(Date.now()-CEX<350&&e.target.closest('.chips')){e.stopPropagation();e.preventDefault()}},true);
 /* Retour en glissant depuis le bord gauche (fiche et sous-pages) : la page suit le doigt, puis repart à droite ou revient */
 let SW=null,SWB=0;
 document.addEventListener('touchstart',e=>{SW=null;const t=e.touches[0];if(e.touches.length>1||t.clientX>24||!(VIEW||SUBV)||F)return;SW={x:t.clientX,y:t.clientY,dx:0,on:0,t:Date.now()}},{passive:true});
@@ -581,7 +638,28 @@ function card(it,mode){const inl=!!S.items[it.k];let ex='';
  if(mode==='list'){const P=prog(it);ex=`<div class="pb${barCls(it,P)}"><i style="width:${it.s==='done'?100:P.pct}%"></i></div><b>${esc(it.t)}</b><small>${P.open?(it.w.length?'Ch. '+maxSeen(it):'Pas commencé'):P.seen+' / '+P.total}</small>`}
  else ex=`<b>${esc(it.t)}</b><small>${it.yr||''}</small>`;
  return`<button class="pc${mode==='list'?' lm':''}" data-a=open data-k="${it.k}"><div class=im>${img(it)}<span class=tg>${esc(it.lb)}</span>${mode!=='list'&&inl?`<span class=in>${SI('check',14,3)}</span>`:''}</div>${ex}</button>`}
-const chips=(L,cur,a)=>`<div class=chips>${L.map(([v,l])=>`<button class="chip${cur===v?' on':''}" data-a=${a} data-v=${v}>${l}</button>`).join('')}</div>`;
+/* ---- Page Explorer : filtres + grille qui se charge au fil du défilement ---- */
+let EX=null;
+function openExp(sort){EX={t:DT,sort,g:'',y:'',c:'',st:'',L:[],page:0,more:true,busy:false,err:''};openSub('exp');exLoad()}
+async function exLoad(){if(!EX||EX.busy||!EX.more)return;const E=EX;E.busy=true;E.err='';paintExp();
+ try{const r=await catFetch(E.t,E,E.page+1);if(EX!==E)return;E.page++;const seen=new Set(E.L.map(x=>x.k));E.L.push(...r.L.filter(x=>!seen.has(x.k)));E.more=r.more&&r.L.length>0}
+ catch(e){if(EX!==E)return;E.err=e.message==='NOKEY'?'Ajoute ta clé TMDB dans les réglages pour explorer les séries.':e.message}
+ E.busy=false;paintExp()}
+function paintExp(){const el=$('#exr');if(el&&SUBV==='exp'&&!VIEW){el.innerHTML=exResHTML();exWatch()}}
+function exResHTML(){const E=EX;
+ return(E.L.length?`<div class=grid>${E.L.map(x=>card(x)).join('')}</div>`:E.busy||E.err?'':`<div class=empty><b>Aucune œuvre</b>Essaie d’autres filtres.</div>`)
+  +(E.err?`<p class=err>${esc(E.err)}</p>`:'')+(E.more&&!E.err?`<button class=exm id=exm data-a=exm>${E.busy?'Chargement…':'Charger plus'}</button>`:'')}
+/* charge la page suivante quand le bas de la grille approche */
+let EXIO=null;function exWatch(){if(EXIO)EXIO.disconnect();const m=$('#exm');if(!m||!window.IntersectionObserver)return;
+ EXIO=new IntersectionObserver(e=>{if(e[0].isIntersecting)exLoad()},{rootMargin:'0px 0px 600px 0px'});EXIO.observe(m)}
+function exView(){const E=EX,t=E.t,tmd=useTM(t),gl=tmd?Object.entries(TG).map(([k,v])=>[k,v]):ALG.map(g=>[g,GFR[g]||g]);
+ const ys=[['','Toutes']];for(let y=new Date().getFullYear();y>=2010;y--)ys.push([''+y,''+y]);ys.push(['2000s','Années 2000'],['1990s','Années 90'],['old','Avant 1990']);
+ const row=(k,lab,L)=>`<div class=exf><span class=exl>${lab}</span>${chips(L.map(([v,l])=>[v,esc(l)]),E[k],'exf',k)}</div>`;
+ return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>Explorer<small>${{A:'Animés',M:'Mangas & Webtoons',T:'Séries'}[t]}</small></h1></header>
+ ${row('sort','Tri',EXS)}${row('g','Genre',[['','Tous'],...gl])}${row('y','Année',ys)}
+ ${EXC[t]?row('c',t==='M'?'Origine':'Pays',[['','Tous'],...EXC[t]]):''}${row('st','Statut',[['','Tous'],['rel','En cours'],['fin','Terminé']])}
+ <div id=exr>${exResHTML()}</div>`}
+const chips=(L,cur,a,k)=>`<div class=chips${k?` data-sx="ch-${k}" data-k=${k}`:''}>${L.map(([v,l])=>`<button class="chip${cur===v?' on':''}" data-a=${a}${k?` data-k=${k}`:''} data-v="${v}">${l}</button>`).join('')}</div>`;
 const tabbar=()=>`<nav class=tabs>${[['disc','search','Discover'],['home','home','Home'],['cal','cal','Calendrier'],['list','user','Profil']].map(([k,i,l])=>`<button class="${TAB===k?'on':''}" data-a=tab data-t=${k}><span>${SI(i,24)}</span>${l}</button>`).join('')}</nav>`;
 const gear=`<button class=ib data-a=cfg aria-label="Réglages">${SI('gear',21,1.7)}</button>`;
 
@@ -589,8 +667,12 @@ function resHTML(){
  if(RERR==='NOKEY')return`<div class=note>Les séries passent par TMDB, qui demande une clé gratuite. <button data-a=cfg>Ajouter ma clé</button></div>`;
  if(RERR)return`<p class=err>${esc(RERR)}</p>`;
  if(!RES)return`<div class=empty>Chargement…</div>`;
+ if(!Q)return rowsHTML();
  if(!RES.length)return BUSY?`<div class=empty>Recherche…</div>`:`<div class=empty><b>Aucun résultat</b>Essaie un autre titre ou une autre catégorie.</div>`;
  return`<h2>${Q?'Résultats':'Tendances du moment'}</h2><div class=grid style="${BUSY?'opacity:.5':''}">${RES.map(x=>card(x)).join('')}</div>`}
+function rowsHTML(){const D=DRW[DT];if(!D)return`<div class=empty>Chargement…</div>`;
+ return EXS.map(([k,l])=>D[k]&&D[k].length?`<h2 class=h2r><span>${l}</span><button data-a=exo data-v=${k}>Tout voir</button></h2><div class="hs dr" data-sx="dr-${DT}-${k}">${D[k].slice(0,20).map(x=>card(x)).join('')}</div>`:'').join('')
+  +`<button class="big exb" data-a=exo data-v=tr>${SI('search',20)} Explorer tout le catalogue</button>`}
 function paintRes(){const el=$('#res');if(el&&TAB==='disc'&&!VIEW)el.innerHTML=resHTML()}
 function discView(){return`<header><h1>Discover</h1>${gear}</header>
  <div class=srch>${SI('search',20)}<input id=q type=search placeholder="Rechercher un titre…" value="${esc(Q)}" autocomplete=off enterkeyhint=search><button class=clr id=clr data-a=clr aria-label="Effacer la recherche" ${Q?'':'hidden'}>${SI('x',16,2.4)}</button></div>
@@ -717,6 +799,7 @@ function catHTML(){const X=catItems(),all=secItems(SUBV).length,m=S.pm||'g3',mix
  return head+PGRP.filter(([g],i)=>i<4||G[g]).map(([g,l,c])=>{const cl=PGC.has(g),L=G[g]||[];return`<section class="pg pg-${g}"><button class="pgh${cl?' cl':''}" data-a=pgt data-v=${g}><i style="background:${c}"></i><span>${l} (${L.length})</span><hr>${SI('chev',14)}</button>${cl||!L.length?'':catList(L,m,mix)}</section>`}).join('')}
 function paintCat(){const el=$('#cres');if(el)el.innerHTML=catHTML();const b=$('#fbt');if(b)b.classList.toggle('on',nFilt()>0)}
 function subView(){if(SUBV==='stats')return statsView();
+ if(SUBV==='exp')return EX?exView():'';
  if(SUBV.startsWith('next:')){const t=SUBV.slice(5),X=homeSets().next.filter(x=>x.it.ty===t);return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${(HSEC.find(x=>x[0]===t)||[])[1]||''}<small>${X.length}</small></h1><span class=hbt style="margin-left:auto">${hvBtn()}</span></header>${nextHTML(X)}`}
  return`<header class=sh><button class=ib data-a=back aria-label="Retour">${SI('back',20)}</button><h1>${CATL[SUBV]||''}<small>${secItems(SUBV).length}</small></h1><span class=hbt style="margin-left:auto"><button class="ib${nFilt()?' on':''}" id=fbt data-a=pfo aria-label="Filtres et tri">${SI('filt',20)}</button><button class=ib data-a=pmo aria-label="Mode d’affichage">${SI('dots',20,2.6)}</button></span></header>
  <div class=srch>${SI('search',20)}<input id=cq type=search placeholder="Titre, genre, année, statut…" value="${esc(PF.q)}" autocomplete=off enterkeyhint=search><button class=clr id=cclr data-a=cclr aria-label="Effacer la recherche" ${PF.q?'':'hidden'}>${SI('x',16,2.4)}</button></div>
@@ -783,9 +866,11 @@ function overlay(){const f=F;if(!f)return'';
   <p class=cred>Données : AniList et TMDB. Ce produit utilise l’API TMDB mais n’est ni approuvé ni certifié par TMDB.</p></div></div>`}
  return''}
 
-function render(){const a=$('#app');
+function render(){const a=$('#app'),sx={};a.querySelectorAll('[data-sx]').forEach(e=>{if(e.scrollLeft)sx[e.dataset.sx]=e.scrollLeft});
  a.innerHTML=(VIEW?detView():SUBV?subView():(TAB==='disc'?discView():TAB==='list'?listView():TAB==='cal'?calView():homeView())+tabbar())+overlay();
  a.style.overflowY=F?'hidden':'';
+ a.querySelectorAll('[data-sx]').forEach(e=>{if(sx[e.dataset.sx])e.scrollLeft=sx[e.dataset.sx]});
+ if(SUBV==='exp'&&!VIEW)exWatch();
  /* le bouton ⋯ n'apparaît que si le titre de l'épisode est coupé */
  if(VIEW)a.querySelectorAll('.er').forEach(r=>{const m=r.querySelector('.em'),b=r.querySelector('.tx b');if(m)m.hidden=b.scrollHeight<=b.clientHeight+1})}
 
@@ -797,6 +882,9 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
  if(a==='all')return openSub(d.v);
  if(a==='back')return history.back();
  if(a==='cfg'){F={k:'cfg'};return render()}
+ if(a==='exo')return openExp(d.v);
+ if(a==='exm')return exLoad();
+ if(a==='exf'){if(EX[d.k]===d.v)return;Object.assign(EX,{[d.k]:d.v,L:[],page:0,more:true,busy:false,err:''});EX=Object.assign({},EX);render();return exLoad()}
  if(a==='dt'){DT=d.v;RES=null;render();return search()}
  if(a==='clr'){const q=$('#q');q.value='';Q='';b.hidden=true;q.focus();clearTimeout(ST);return search()}
  if(a==='fs'){FS=d.v;return render()}
@@ -851,7 +939,7 @@ function alertMsg(m){const el=$('#upto');if(el){el.value='';el.placeholder=m}}
 document.addEventListener('input',e=>{const t=e.target;
  if(t.id==='cq'){PF.q=t.value;$('#cclr').hidden=!t.value;return paintCat()}
  if(t.id==='q'){Q=t.value.trim();$('#clr').hidden=!t.value;clearTimeout(ST);ST=setTimeout(search,450)}
- if(t.dataset.cfg){S.cfg[t.dataset.cfg]=t.value.trim();persist();if(t.dataset.cfg==='tmdb'){RES=DT==='M'?RES:null;RERR=''}}});
+ if(t.dataset.cfg){S.cfg[t.dataset.cfg]=t.value.trim();persist();if(t.dataset.cfg==='tmdb'){RES=DT==='M'?RES:null;RERR='';delete DRW.A;delete DRW.T}}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='cq')e.target.blur();if(e.key==='Enter'&&e.target.id==='q'){clearTimeout(ST);e.target.blur();search()}if(e.key==='Enter'&&e.target.id==='upto')$('[data-a=upto]').click()});
 document.addEventListener('change',e=>{if(e.target.id!=='file'||!e.target.files[0])return;const r=new FileReader();
  r.onload=()=>{try{merge(JSON.parse(r.result));S.dirty=1;persist();setMsg('Import terminé.');schedSync()}catch{setMsg('Fichier illisible.')}};r.readAsText(e.target.files[0])});

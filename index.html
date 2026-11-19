@@ -11,9 +11,10 @@
 :root{--bg:#f5f5f2;--card:#fff;--ink:#0b0b0a;--mut:#6f6f6b;--acc:#ffd400;--act:#8a6d00;--tint:#fff1a8;--on:#1a1500;--red:#e5484d;--ok:#16a34a;--fin:#8b6cf0;--old:#e8590c;--line:#e6e6e2;color-scheme:light}
 @media(prefers-color-scheme:dark){:root{--bg:#111213;--card:#1c1d1f;--ink:#f4f4f0;--mut:#9a9ca0;--acc:#ffd400;--act:#ffd400;--tint:#3b3410;--on:#1a1500;--red:#f06a6a;--ok:#34d27b;--fin:#b9a2ff;--old:#ff9f1a;--line:#2f3134;color-scheme:dark}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{overscroll-behavior-y:none}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 "Avenir Next","Trebuchet MS",system-ui,sans-serif;padding:env(safe-area-inset-top) 12px calc(100px + env(safe-area-inset-bottom))}
-main{max-width:640px;margin:0 auto}
+/* La page ne défile pas : c'est #app qui défile. Ainsi le rebond d'iOS ne déplace jamais la barre d'onglets ni les boutons fixes */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 "Avenir Next","Trebuchet MS",system-ui,sans-serif}
+main#app{position:fixed;inset:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;padding:env(safe-area-inset-top) max(12px,calc((100% - 640px)/2)) calc(100px + env(safe-area-inset-bottom))}
 h1{font:800 28px/1.15 "Avenir Next","Trebuchet MS",system-ui,sans-serif;letter-spacing:-.01em;margin:16px 0}
 h2{font:700 18px/1.2 "Avenir Next","Trebuchet MS",system-ui,sans-serif;margin:22px 0 10px}
 header{display:flex;align-items:center;justify-content:space-between}
@@ -536,16 +537,18 @@ function groups(it,L){
 function initOpen(k){if(OPEN[k])return;const it=obj(k),P=prog(it),G=groups(it,P.L);if(!G.length)return;
  if(it.src==='tm'){OPEN[k]=new Set();return}                       // saisons repliées par défaut, on ouvre celle qu'on veut
  const g=G.find(g=>P.next&&g.L.includes(P.next))||(P.seen?G[G.length-1]:G[0]);OPEN[k]=new Set([g.id])}
-function openDet(k){SCRS.push(scrollY);VIEW=k;if((obj(k)||{}).src==='tm')delete OPEN[k];initOpen(k);history.pushState({v:k,sub:SUBV},'');slide('fwd',()=>{render();scrollTo(0,0)});loadDet(k)}
-function openSub(t){SCRS.push(scrollY);SUBV=t;PF=PF0();history.pushState({sub:t},'');slide('fwd',()=>{render();scrollTo(0,0)})}
-addEventListener('popstate',e=>{const st=e.state||{},y=SCRS.pop()||0;if(SWB){SWB=0;F=null;VIEW=st.v||null;SUBV=st.sub||null;render();scrollTo(0,y);const a=$('#app');a.classList.remove('vtl','vtr');void a.offsetWidth;a.classList.add('vtl');return setTimeout(()=>a.classList.remove('vtl'),360)}
- hideToast();const same=VIEW===(st.v||null)&&SUBV===(st.sub||null);F=null;VIEW=st.v||null;SUBV=st.sub||null;slide(same?'':'back',()=>{render();scrollTo(0,y)})});
+/* Défilement : celui de #app (voir le CSS de main#app) */
+const SCR=()=>$('#app'),scrY=()=>SCR().scrollTop,scrTo=y=>{SCR().scrollTop=y};
+function openDet(k){SCRS.push(scrY());VIEW=k;if((obj(k)||{}).src==='tm')delete OPEN[k];initOpen(k);history.pushState({v:k,sub:SUBV},'');slide('fwd',()=>{render();scrTo(0)});loadDet(k)}
+function openSub(t){SCRS.push(scrY());SUBV=t;PF=PF0();history.pushState({sub:t},'');slide('fwd',()=>{render();scrTo(0)})}
+addEventListener('popstate',e=>{const st=e.state||{},y=SCRS.pop()||0;if(SWB){SWB=0;F=null;VIEW=st.v||null;SUBV=st.sub||null;render();scrTo(y);const a=$('#app');a.classList.remove('vtl','vtr');void a.offsetWidth;a.classList.add('vtl');return setTimeout(()=>a.classList.remove('vtl'),360)}
+ hideToast();const same=VIEW===(st.v||null)&&SUBV===(st.sub||null);F=null;VIEW=st.v||null;SUBV=st.sub||null;slide(same?'':'back',()=>{render();scrTo(y)})});
 /* Tirer vers le bas en haut de Home ou du Calendrier : actualise les sorties (et synchronise si la synchro est réglée) */
 let PT=null,PTL=0;const PTH=70;
 function ptrEl(){let e=$('#ptr');if(!e){e=document.createElement('div');e.id='ptr';e.innerHTML=SI('sync',20,2.4);document.body.appendChild(e)}return e}
-document.addEventListener('touchstart',e=>{PT=null;if(PTL||VIEW||SUBV||F||!['home','cal'].includes(TAB)||scrollY>0||e.touches.length>1)return;const t=e.touches[0];PT={x:t.clientX,y:t.clientY,d:0,on:0}},{passive:true});
+document.addEventListener('touchstart',e=>{PT=null;if(PTL||VIEW||SUBV||F||!['home','cal'].includes(TAB)||scrY()>0||e.touches.length>1)return;const t=e.touches[0];PT={x:t.clientX,y:t.clientY,d:0,on:0}},{passive:true});
 document.addEventListener('touchmove',e=>{if(!PT)return;const t=e.touches[0],dy=t.clientY-PT.y,dx=t.clientX-PT.x;
- if(!PT.on){if(Math.abs(dx)>Math.abs(dy)||dy<0||scrollY>0){if(Math.abs(dx)>10||dy<-10)PT=null;return}if(dy<8)return;PT.on=1}
+ if(!PT.on){if(Math.abs(dx)>Math.abs(dy)||dy<0||scrY()>0){if(Math.abs(dx)>10||dy<-10)PT=null;return}if(dy<8)return;PT.on=1}
  e.preventDefault();PT.d=Math.min(140,dy*.55);const el=ptrEl();el.classList.remove('go');el.style.opacity=Math.min(1,PT.d/PTH);
  el.style.transform=`translateY(${PT.d-50}px)`;el.firstChild.style.transform=`rotate(${PT.d*4}deg)`;el.style.color=PT.d>=PTH?'var(--act)':'var(--mut)'},{passive:false});
 document.addEventListener('touchend',async()=>{if(!PT)return;const p=PT;PT=null;if(!p.on)return;const el=ptrEl();el.classList.add('go');
@@ -778,14 +781,14 @@ function overlay(){const f=F;if(!f)return'';
 
 function render(){const a=$('#app');
  a.innerHTML=(VIEW?detView():SUBV?subView():(TAB==='disc'?discView():TAB==='list'?listView():TAB==='cal'?calView():homeView())+tabbar())+overlay();
- document.body.style.overflow=F?'hidden':'';
+ a.style.overflowY=F?'hidden':'';
  /* le bouton ⋯ n'apparaît que si le titre de l'épisode est coupé */
  if(VIEW)a.querySelectorAll('.er').forEach(r=>{const m=r.querySelector('.em'),b=r.querySelector('.tx b');if(m)m.hidden=b.scrollHeight<=b.clientHeight+1})}
 
 /* ============ Actions ============ */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;JUST=null;const a=b.dataset.a,d=b.dataset;
  if(a==='fno'){if(e.target!==b)return;return closeF()}
- if(a==='tab'){TAB=d.t;render();scrollTo(0,0);if(TAB==='disc'&&!RES)search();if(TAB==='cal')refreshAll();return}
+ if(a==='tab'){TAB=d.t;render();scrTo(0);if(TAB==='disc'&&!RES)search();if(TAB==='cal')refreshAll();return}
  if(a==='open')return openDet(d.k);
  if(a==='all')return openSub(d.v);
  if(a==='back')return history.back();

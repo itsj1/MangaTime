@@ -10,6 +10,7 @@ App personnelle (un seul utilisateur) de suivi de **mangas / manhwas / webtoons*
 
 - PWA en **un seul fichier `index.html`** (CSS + JS inline, sans framework ni build), plus `sw.js`, `manifest.json` et les icônes.
 - `sw.js` : réseau d'abord, cache en secours. **Incrémenter `CACHE` (`mangatime-vN`) à chaque version publiée** pour que le téléphone récupère la nouvelle.
+- **La page elle-même ne défile pas** : `main#app` est fixé plein écran et c'est lui qui défile (`scrY()` / `scrTo(y)`, jamais `scrollY` / `scrollTo`), pour que le rebond d'iOS ne fasse pas bouger la barre d'onglets.
 - Rendu : `render()` reconstruit `#app` en `innerHTML` ; les actions passent par `data-a=…` dans un seul écouteur de clic.
 - État d'affichage : `TAB` (`disc` / `home` / `cal` / `list`), `VIEW` (clé de l'œuvre ouverte), `SUBV` (sous-page : catégorie, `next:T`, `stats`…), `F` (feuille ou pop-up ouvert). Navigation retour via `history.pushState` / `popstate`.
 - `sheet.png` à la racine est une ancienne planche d'aperçu, inutile.
